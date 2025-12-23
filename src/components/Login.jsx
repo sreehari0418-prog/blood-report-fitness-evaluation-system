@@ -1,67 +1,87 @@
 import React, { useState } from 'react';
 
 const Login = ({ onLogin }) => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        // Simulate network delay
-        setTimeout(() => {
-            setIsLoading(false);
-            onLogin({ email }); // Pass mock user data
-        }, 1500);
-    };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    setError('');
 
-    return (
-        <div className="login-container">
-            <div className="login-card fade-in">
-                <div className="logo-section">
-                    <img src="/logo.png" alt="BloodFit Logo" className="app-logo" />
-                    <h1>Blood & Fit</h1>
-                    <p>Your personal health companion</p>
-                </div>
+    // Validation
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
 
-                <form onSubmit={handleSubmit} className="login-form">
-                    <div className="form-group">
-                        <label htmlFor="email">Email Address</label>
-                        <input
-                            type="email"
-                            id="email"
-                            className="input-field"
-                            placeholder="hello@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
+    setIsLoading(true);
+    // Simulate network delay
+    setTimeout(() => {
+      setIsLoading(false);
+      // In a real app, verifying credentials would happen here
+      onLogin({ email, name: email.split('@')[0] });
+    }, 1500);
+  };
 
-                    <div className="form-group">
-                        <label htmlFor="password">Password</label>
-                        <input
-                            type="password"
-                            id="password"
-                            className="input-field"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                    </div>
+  return (
+    <div className="login-container">
+      <div className="login-card fade-in">
+        <div className="logo-section">
+          <img src="/app_logo.jpg" alt="BloodFit Logo" className="app-logo" />
+          <h1>Blood & Fit</h1>
+          <p>Your personal health companion</p>
+        </div>
 
-                    <button type="submit" className="btn-primary" disabled={isLoading}>
-                        {isLoading ? <span className="spinner"></span> : 'Login'}
-                    </button>
-                </form>
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="email">Email Address</label>
+            <input
+              type="email"
+              id="email"
+              className="input-field"
+              placeholder="hello@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
 
-                <p className="footer-text">
-                    Don't have an account? <span className="link">Sign up</span>
-                </p>
-            </div>
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <input
+              type="password"
+              id="password"
+              className="input-field"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
 
-            <style>{`
+          {error && <p className="error-msg">{error}</p>}
+
+          <button type="submit" className="btn-primary" disabled={isLoading}>
+            {isLoading ? <span className="spinner"></span> : (isLogin ? 'Login' : 'Sign Up')}
+          </button>
+        </form>
+
+        <p className="footer-text">
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          <span className="link" onClick={() => setIsLogin(!isLogin)}>
+            {isLogin ? 'Sign up' : 'Login'}
+          </span>
+        </p>
+      </div>
+
+      <style>{`
         .login-container {
           min-height: 100vh;
           display: flex;
@@ -86,11 +106,12 @@ const Login = ({ onLogin }) => {
         }
 
         .app-logo {
-          width: 80px;
-          height: 80px;
+          width: 100px;
+          height: 100px;
           object-fit: contain;
           margin-bottom: var(--spacing-md);
-          filter: drop-shadow(0 4px 6px rgba(230, 57, 70, 0.2));
+          border-radius: 50%;
+          box-shadow: var(--shadow-md);
         }
 
         .logo-section h1 {
@@ -129,6 +150,13 @@ const Login = ({ onLogin }) => {
           align-items: center;
         }
 
+        .error-msg {
+            color: #ef4444;
+            font-size: 12px;
+            text-align: left;
+            margin-top: -10px;
+        }
+
         .footer-text {
           margin-top: var(--spacing-lg);
           font-size: var(--font-size-sm);
@@ -163,8 +191,8 @@ const Login = ({ onLogin }) => {
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Login;

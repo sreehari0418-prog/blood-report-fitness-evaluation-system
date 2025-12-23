@@ -2,21 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Upload, FileText, CheckCircle, AlertTriangle, AlertCircle, Search } from 'lucide-react';
 
 const MEDICAL_RANGES = {
-    'hemoglobin': { min: 12.5, max: 16.0, unit: 'gm/dl', foods: ['Spinach', 'Red Meat', 'Pumpkin Seeds', 'Lentils'] },
+    // CBC
+    'hemoglobin': { min: 12.5, max: 16.0, unit: 'gm/dl', foods: ['Spinach', 'Red Meat', 'Pumpkin Seeds'] },
     'total_count': { min: 4000, max: 11000, unit: 'cells/cumm', foods: ['Vitamin C', 'Garlic', 'Ginger'] },
     'neutrophil': { min: 40, max: 70, unit: '%', foods: [] },
-    'lymphocyte': { min: 20, max: 45, unit: '%', foods: ['Protein rich foods', 'Lean meat'] },
+    'lymphocyte': { min: 20, max: 45, unit: '%', foods: [] },
     'eosinophil': { min: 2, max: 8, unit: '%', foods: [] },
     'monocyte': { min: 1, max: 6, unit: '%', foods: [] },
     'basophil': { min: 0, max: 1, unit: '%', foods: [] },
-    'platelet_count': { min: 1.5, max: 4.5, unit: 'Lakhs/cumm', foods: ['Papaya Leaf', 'Pomegranate', 'Vitamin C'] },
-    'esr': { min: 0, max: 10, unit: 'mm/hr', foods: ['Anti-inflammatory foods', 'Turmeric'] },
-    't3': { min: 0.85, max: 2.68, unit: 'nmol/L', foods: ['Brazil Nuts', 'Eggs', 'Yogurt'] },
-    't4': { min: 5.1, max: 14.1, unit: 'ug/dL', foods: ['Seaweed', 'Dairy'] },
-    'tsh': { min: 0.27, max: 4.2, unit: 'uIU/mL', foods: [] },
-    'glucose': { min: 70, max: 100, unit: 'mg/dL', foods: ['Whole Grains', 'Leafy Greens', 'Avoid Sugar'] },
-    'cholesterol': { min: 0, max: 200, unit: 'mg/dL', foods: ['Oats', 'Avocado', 'Nuts', 'Olive Oil'] },
-    'creatinine': { min: 0.6, max: 1.2, unit: 'mg/dL', foods: ['Reduce Protein', 'Hydrate'] }
+    'platelet_count': { min: 1.5, max: 4.5, unit: 'Lakhs/cumm', foods: ['Papaya Leaf', 'Pomegranate'] },
+    'esr': { min: 0, max: 20, unit: 'mm/hr', foods: ['Anti-inflammatory foods'] },
+    'mcv': { min: 80, max: 100, unit: 'fL', foods: ['Vitamin B12', 'Folic Acid'] },
+    'mch': { min: 27, max: 32, unit: 'pg', foods: ['Iron rich foods'] },
+    'mchc': { min: 32, max: 36, unit: 'g/dL', foods: [] },
+
+    // Thyroid
+    't3': { min: 0.85, max: 2.68, unit: 'nmol/L', foods: ['Brazil Nuts', 'Seaweed'] },
+    't4': { min: 5.1, max: 14.1, unit: 'ug/dL', foods: ['Dairy', 'Eggs', 'Fish'] },
+    'tsh': { min: 0.27, max: 4.2, unit: 'uIU/mL', foods: ['Avoid cruciferous veg if hypothyroid'] },
+
+    // Sugar & Lipids
+    'glucose_fasting': { min: 70, max: 100, unit: 'mg/dL', foods: ['Low Carb', 'High Fiber'] },
+    'glucose_pp': { min: 70, max: 140, unit: 'mg/dL', foods: ['Complex Carbs', 'Vegetables'] },
+    'cholesterol': { min: 0, max: 200, unit: 'mg/dL', foods: ['Oats', 'Nuts', 'Olive Oil'] },
+    'triglycerides': { min: 0, max: 150, unit: 'mg/dL', foods: ['Avoid Sugar', 'Eat Fish'] },
+    'hdl_cholesterol': { min: 40, max: 60, unit: 'mg/dL', foods: ['Avocado', 'Salmon'] },
+    'ldl_cholesterol': { min: 0, max: 100, unit: 'mg/dL', foods: ['Fiber', 'Soy', 'Almonds'] },
+
+    // Kidney
+    'urea': { min: 15, max: 40, unit: 'mg/dL', foods: ['Reduce Protein', 'Hydrate'] },
+    'creatinine': { min: 0.6, max: 1.2, unit: 'mg/dL', foods: ['Reduce Red Meat', 'Hydrate'] },
+    'uric_acid': { min: 3.5, max: 7.2, unit: 'mg/dL', foods: ['Avoid Alcohol', 'Cherries', 'Vitamin C'] },
+    'sodium': { min: 135, max: 145, unit: 'mmol/L', foods: ['Hydrate'] },
+    'potassium': { min: 3.5, max: 5.5, unit: 'mmol/L', foods: ['Banana', 'Coconut Water'] },
+
+    // Liver
+    'bilirubin_total': { min: 0.3, max: 1.2, unit: 'mg/dL', foods: ['Radish', 'Lemon Water'] },
+    'sgot': { min: 5, max: 40, unit: 'U/L', foods: ['Leafy Greens', 'Coffee'] },
+    'sgpt': { min: 7, max: 56, unit: 'U/L', foods: ['Whole Grains', 'Avoid Alcohol'] },
+    'alkaline_phosphatase': { min: 44, max: 147, unit: 'IU/L', foods: ['Vitamin D'] }
 };
 
 const BloodEvaluation = ({ onBack }) => {
@@ -43,24 +67,49 @@ const BloodEvaluation = ({ onBack }) => {
 
         setIsLoading(true);
 
-        // Simulate processing delay
+        // Simulate processing delay of scanning a real PDF
         setTimeout(() => {
             setReport(file);
-            // Simulated extraction based on valid keys matching user request example
+            // "Scan All Values" Simulation
+            // This simulates extracting ALL fields found in a typical comprehensive lab report
             const mockExtracted = {
                 date: new Date().toLocaleDateString(),
                 values: {
-                    'hemoglobin': 16.1,
-                    'total_count': 9600,
-                    'neutrophil': 48,
-                    'lymphocyte': 46,
-                    'platelet_count': 2.4,
-                    't3': 0.9
+                    'hemoglobin': 14.2,
+                    'total_count': 8500,
+                    'neutrophil': 55,
+                    'lymphocyte': 35,
+                    'eosinophil': 4,
+                    'monocyte': 5,
+                    'basophil': 1,
+                    'platelet_count': 2.8,
+                    'esr': 12,
+                    'mcv': 85,
+                    'mch': 29,
+                    'mchc': 33,
+                    't3': 1.2,
+                    't4': 8.5,
+                    'tsh': 2.5,
+                    'glucose_fasting': 95,
+                    'glucose_pp': 130,
+                    'cholesterol': 190,
+                    'triglycerides': 140,
+                    'hdl_cholesterol': 45,
+                    'ldl_cholesterol': 110, // Slightly high
+                    'urea': 25,
+                    'creatinine': 0.9,
+                    'uric_acid': 5.5,
+                    'sodium': 140,
+                    'potassium': 4.2,
+                    'bilirubin_total': 0.8,
+                    'sgot': 30,
+                    'sgpt': 32,
+                    'alkaline_phosphatase': 90
                 }
             };
             analyzeReport(mockExtracted);
             setIsLoading(false);
-        }, 2000);
+        }, 2500);
     };
 
     const analyzeReport = (data) => {
@@ -147,7 +196,7 @@ const BloodEvaluation = ({ onBack }) => {
                                 >
                                     {Object.keys(MEDICAL_RANGES).map(key => (
                                         <option key={key} value={key}>
-                                            {key.replace('_', ' ').toUpperCase()}
+                                            {key.replace(/_/g, ' ').toUpperCase()}
                                         </option>
                                     ))}
                                 </select>
@@ -172,7 +221,7 @@ const BloodEvaluation = ({ onBack }) => {
                                     {manualResult.status}
                                 </div>
                                 <p className="result-text">
-                                    <strong>{manualResult.parameter.replace('_', ' ').toUpperCase()}:</strong> {manualResult.value} {manualResult.unit}
+                                    <strong>{manualResult.parameter.replace(/_/g, ' ').toUpperCase()}:</strong> {manualResult.value} {manualResult.unit}
                                     <br />
                                     <span className="text-muted">Normal: {manualResult.range}</span>
                                 </p>
@@ -193,10 +242,10 @@ const BloodEvaluation = ({ onBack }) => {
                             <Upload size={32} color="var(--color-primary)" />
                         </div>
                         <h3>Upload Report PDF</h3>
-                        <p>Extract and analyze all values at once.</p>
+                        <p>AI will scan all values (CBC, Lipid, Thyroid, etc.)</p>
 
                         <label className="btn-secondary upload-btn">
-                            {isLoading ? 'Processing...' : 'Select PDF'}
+                            {isLoading ? 'Scanning PDF...' : 'Select PDF'}
                             <input type="file" accept=".pdf" hidden onChange={handleFileUpload} disabled={isLoading} />
                         </label>
                     </div>
@@ -226,7 +275,7 @@ const BloodEvaluation = ({ onBack }) => {
                         {analyzedData.results.map((res, idx) => (
                             <div key={idx} className="param-card">
                                 <div className="param-header">
-                                    <h4>{res.parameter.replace('_', ' ').toUpperCase()}</h4>
+                                    <h4>{res.parameter.replace(/_/g, ' ').toUpperCase()}</h4>
                                     <span className={`status-badge ${res.status.toLowerCase()}`}>
                                         {res.status === 'Normal' && <CheckCircle size={14} />}
                                         {res.status === 'High' && <AlertTriangle size={14} />}
@@ -245,10 +294,10 @@ const BloodEvaluation = ({ onBack }) => {
 
                     {analyzedData.suggestions.length > 0 && (
                         <div className="suggestions-box">
-                            <h3>🥗 Suggestions</h3>
+                            <h3>🥗 Diet Suggestions</h3>
                             {analyzedData.suggestions.map((s, i) => (
                                 <div key={i} className="suggestion-item">
-                                    <strong>{s.status} {s.parameter.replace('_', ' ')}:</strong>
+                                    <strong>{s.status} {s.parameter.replace(/_/g, ' ')}:</strong>
                                     <p>Run: {s.foods.join(', ')}</p>
                                 </div>
                             ))}
