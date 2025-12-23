@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Upload, FileText, CheckCircle, AlertTriangle, AlertCircle, Search } from 'lucide-react';
+import { ChevronLeft, Upload, FileText, CheckCircle, AlertTriangle, AlertCircle, Search, ScanLine } from 'lucide-react';
+import Tesseract from 'tesseract.js';
 
 const MEDICAL_RANGES = {
     // CBC
@@ -48,6 +49,7 @@ const BloodEvaluation = ({ onBack }) => {
     const [analyzedData, setAnalyzedData] = useState(null);
     const [history, setHistory] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [statusText, setStatusText] = useState('');
 
     // Manual Entry State
     const [manualParam, setManualParam] = useState('hemoglobin');
@@ -61,55 +63,77 @@ const BloodEvaluation = ({ onBack }) => {
         }
     }, []);
 
+    // --- OCR LOGIC ---
+    const processImage = async (file) => {
+        setIsLoading(true);
+        setStatusText('Initializing OCR Engine...');
+
+        try {
+            // 1. Recognize text using Tesseract
+            setStatusText('Scanning text... This may take a moment.');
+            const { data: { text } } = await Tesseract.recognize(
+                file,
+                'eng',
+                { logger: m => console.log(m) } // Optional logger
+            );
+
+            setStatusText('Analyzing extracted data...');
+            console.log("Extracted Text:", text); // Debugging
+
+            // 2. Parse text for keywords and values
+            const extractedValues = {};
+            const lowerText = text.toLowerCase().replace(/\s+/g, ' '); // Normalize
+
+            Object.keys(MEDICAL_RANGES).forEach(key => {
+                // Create regex to find key followed by numbers
+                // Matches: "hemoglobin" ... "13.5" or "hemoglobin 13.5"
+                // Adjust key for display names (e.g. "total count")
+                const searchKey = key.replace(/_/g, ' ');
+
+                // Regex explanation:
+                // \b${searchKey}\b : match keyword word boundary
+                // .{0,20} : allow up to 20 ignored characters (colons, units, etc) in between
+                // (\d+(\.\d+)?) : capture number (int or float)
+                const regex = new RegExp(`${searchKey}.{0,20}(\\d+(\\.\\d+)?)`, 'i');
+
+                const match = lowerText.match(regex);
+                if (match && match[1]) {
+                    extractedValues[key] = parseFloat(match[1]);
+                }
+            });
+
+            // 3. Analyze only what was found
+            if (Object.keys(extractedValues).length === 0) {
+                alert("Could not detect any known blood parameters clearly. Please try a clearer image or manual entry.");
+                setIsLoading(false);
+                return;
+            }
+
+            analyzeReport({
+                date: new Date().toLocaleDateString(),
+                values: extractedValues
+            });
+
+        } catch (err) {
+            console.error(err);
+            alert("Error scanning image. Please try again.");
+        } finally {
+            setIsLoading(false);
+            setStatusText('');
+        }
+    };
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        setIsLoading(true);
-
-        // Simulate processing delay of scanning a real PDF
-        setTimeout(() => {
+        // Check if it's an image
+        if (file.type.startsWith('image/')) {
             setReport(file);
-            // "Scan All Values" Simulation
-            // This simulates extracting ALL fields found in a typical comprehensive lab report
-            const mockExtracted = {
-                date: new Date().toLocaleDateString(),
-                values: {
-                    'hemoglobin': 14.2,
-                    'total_count': 8500,
-                    'neutrophil': 55,
-                    'lymphocyte': 35,
-                    'eosinophil': 4,
-                    'monocyte': 5,
-                    'basophil': 1,
-                    'platelet_count': 2.8,
-                    'esr': 12,
-                    'mcv': 85,
-                    'mch': 29,
-                    'mchc': 33,
-                    't3': 1.2,
-                    't4': 8.5,
-                    'tsh': 2.5,
-                    'glucose_fasting': 95,
-                    'glucose_pp': 130,
-                    'cholesterol': 190,
-                    'triglycerides': 140,
-                    'hdl_cholesterol': 45,
-                    'ldl_cholesterol': 110, // Slightly high
-                    'urea': 25,
-                    'creatinine': 0.9,
-                    'uric_acid': 5.5,
-                    'sodium': 140,
-                    'potassium': 4.2,
-                    'bilirubin_total': 0.8,
-                    'sgot': 30,
-                    'sgpt': 32,
-                    'alkaline_phosphatase': 90
-                }
-            };
-            analyzeReport(mockExtracted);
-            setIsLoading(false);
-        }, 2500);
+            processImage(file);
+        } else {
+            alert("Please upload an Image (JPG/PNG) for OCR scanning.");
+        }
     };
 
     const analyzeReport = (data) => {
@@ -241,12 +265,18 @@ const BloodEvaluation = ({ onBack }) => {
                         <div className="icon-circle">
                             <Upload size={32} color="var(--color-primary)" />
                         </div>
-                        <h3>Upload Report PDF</h3>
-                        <p>AI will scan all values (CBC, Lipid, Thyroid, etc.)</p>
+                        <h3>Upload Report Image</h3>
+                        <p>Take a clear photo of your report. AI will scan for values.</p>
 
                         <label className="btn-secondary upload-btn">
-                            {isLoading ? 'Scanning PDF...' : 'Select PDF'}
-                            <input type="file" accept=".pdf" hidden onChange={handleFileUpload} disabled={isLoading} />
+                            {isLoading ? (statusText || 'Scanning...') : 'Select Image (JPG/PNG)'}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={handleFileUpload}
+                                disabled={isLoading}
+                            />
                         </label>
                     </div>
 

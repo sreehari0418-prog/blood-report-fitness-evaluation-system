@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 const Login = ({ onLogin }) => {
+  // Auth State
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -11,7 +12,7 @@ const Login = ({ onLogin }) => {
     e.preventDefault();
     setError('');
 
-    // Validation
+    // --- Validation ---
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
       return;
@@ -22,19 +23,43 @@ const Login = ({ onLogin }) => {
     }
 
     setIsLoading(true);
-    // Simulate network delay
+
     setTimeout(() => {
-      setIsLoading(false);
-      // In a real app, verifying credentials would happen here
-      onLogin({ email, name: email.split('@')[0] });
-    }, 1500);
+      const users = JSON.parse(localStorage.getItem('bloodfit_users') || '{}');
+
+      if (isLogin) {
+        // --- LOGIN LOGIC ---
+        if (users[email] && users[email].password === password) {
+          // Success
+          onLogin({ email, name: email.split('@')[0] });
+        } else {
+          // Failure
+          setError('Invalid email or password. Please try again.');
+          setIsLoading(false);
+        }
+      } else {
+        // --- SIGNUP LOGIC ---
+        if (users[email]) {
+          setError('User with this email already exists. Please login.');
+          setIsLoading(false);
+        } else {
+          // Create new user
+          users[email] = { password }; // In a real app, hash this!
+          localStorage.setItem('bloodfit_users', JSON.stringify(users));
+          // Auto-login
+          onLogin({ email, name: email.split('@')[0] });
+        }
+      }
+    }, 1000);
   };
 
   return (
     <div className="login-container">
       <div className="login-card fade-in">
         <div className="logo-section">
-          <img src="/app_logo.jpg" alt="BloodFit Logo" className="app-logo" />
+          {/* Logo Path Fix: user reported issue with /app_logo.jpg. 
+              Using 'app_logo.jpg' (relative) works better for GH Pages subdirs */}
+          <img src="app_logo.jpg" alt="BloodFit Logo" className="app-logo" />
           <h1>Blood & Fit</h1>
           <p>Your personal health companion</p>
         </div>
@@ -75,7 +100,7 @@ const Login = ({ onLogin }) => {
 
         <p className="footer-text">
           {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <span className="link" onClick={() => setIsLogin(!isLogin)}>
+          <span className="link" onClick={() => { setIsLogin(!isLogin); setError(''); }}>
             {isLogin ? 'Sign up' : 'Login'}
           </span>
         </p>
