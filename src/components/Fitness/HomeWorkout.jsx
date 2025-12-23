@@ -98,7 +98,7 @@ const HomeWorkout = ({ onBack }) => {
                         <div className="w-footer">
                             <span className="duration"><Timer size={14} /> {w.duration}</span>
                             <button className="start-btn" onClick={() => setSelectedWorkout(w)}>
-                                View <PlayCircle size={16} />
+                                Steps
                             </button>
                         </div>
                     </div>
@@ -118,14 +118,6 @@ const HomeWorkout = ({ onBack }) => {
                             <span className="cal-pill">{selectedWorkout.calories}</span>
                         </div>
 
-                        {/* Simulated Video Player */}
-                        <div className="video-placeholder">
-                            <div className="play-circle">
-                                <PlayCircle size={40} fill="white" color="white" />
-                            </div>
-                            <p>Video Simulation</p>
-                        </div>
-
                         <div className="modal-body">
                             <h4><Info size={16} /> How to do it:</h4>
                             <ul className="steps-list">
@@ -136,16 +128,6 @@ const HomeWorkout = ({ onBack }) => {
                                     </li>
                                 ))}
                             </ul>
-
-                            <div className="modal-footer-stats">
-                                <div className="m-stat">
-                                    <span>Duration</span>
-                                    <strong>{selectedWorkout.duration}</strong>
-                                </div>
-                                <button className="start-now-btn" onClick={() => setSelectedWorkout(null)}>
-                                    Start Timer
-                                </button>
-                            </div>
                         </div>
                     </div>
                 </div>
