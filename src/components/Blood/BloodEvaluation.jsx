@@ -66,45 +66,57 @@ const BloodEvaluation = ({ onBack }) => {
     // --- OCR LOGIC ---
     const processImage = async (file) => {
         setIsLoading(true);
-        setStatusText('Initializing OCR Engine...');
+        setStatusText('Starting OCR Engine...');
 
         try {
             // 1. Recognize text using Tesseract
-            setStatusText('Scanning text... This may take a moment.');
             const { data: { text } } = await Tesseract.recognize(
                 file,
                 'eng',
-                { logger: m => console.log(m) } // Optional logger
+                { logger: m => setStatusText(`${m.status} (${Math.round(m.progress * 100)}%)`) }
             );
 
-            setStatusText('Analyzing extracted data...');
-            console.log("Extracted Text:", text); // Debugging
+            console.log("Raw OCR Text:", text);
 
-            // 2. Parse text for keywords and values
+            // 2. Parse text with improved regex
             const extractedValues = {};
-            const lowerText = text.toLowerCase().replace(/\s+/g, ' '); // Normalize
+            // Normalize: remove special chars, extra spaces, toLowerCase
+            const normalizedText = text.toLowerCase()
+                .replace(/[^a-z0-9\s\.]/g, ' ') // keep dots for decimals
+                .replace(/\s+/g, ' ');
 
             Object.keys(MEDICAL_RANGES).forEach(key => {
-                // Create regex to find key followed by numbers
-                // Matches: "hemoglobin" ... "13.5" or "hemoglobin 13.5"
-                // Adjust key for display names (e.g. "total count")
+                // Prepare variations of the key
+                // e.g. "hemoglobin", "haemoglobin"
                 const searchKey = key.replace(/_/g, ' ');
 
-                // Regex explanation:
-                // \b${searchKey}\b : match keyword word boundary
-                // .{0,20} : allow up to 20 ignored characters (colons, units, etc) in between
-                // (\d+(\.\d+)?) : capture number (int or float)
-                const regex = new RegExp(`${searchKey}.{0,20}(\\d+(\\.\\d+)?)`, 'i');
+                // Robust Regex:
+                // \b${searchKey} : Find the word
+                // .{0,30} : Allow up to 30 chars of junk/units/separators
+                // (\d{1,3}(\.\d{1,2})?) : Capture number (1-3 digits, optional decimal)
+                // We handle common OCR errors in regex if possible, but pure regex is limited.
+                const regex = new RegExp(`${searchKey}.{0,30}\\s(\\d{1,3}(\\.\\d{1,2})?)`, 'i');
 
-                const match = lowerText.match(regex);
+                const match = normalizedText.match(regex);
                 if (match && match[1]) {
                     extractedValues[key] = parseFloat(match[1]);
                 }
             });
 
+            // Fallback for tricky ones: Platelets often read as "platelet count" or just "platelet"
+            if (!extractedValues['platelet_count'] && normalizedText.includes('platelet')) {
+                const match = normalizedText.match(/platelet.{0,20}\s(\d+(\.\d+)?)/i);
+                if (match) extractedValues['platelet_count'] = parseFloat(match[1]);
+            }
+
             // 3. Analyze only what was found
             if (Object.keys(extractedValues).length === 0) {
-                alert("Could not detect any known blood parameters clearly. Please try a clearer image or manual entry.");
+                // SHOW ERROR with Raw Text for debugging
+                const userConfirmed = window.confirm(
+                    "Automatic scanning failed to find exact values. \n\nSee raw text?\n" + text.substring(0, 100) + "..."
+                );
+                if (userConfirmed) alert("Full Text Found by AI:\n" + text);
+
                 setIsLoading(false);
                 return;
             }
@@ -116,7 +128,7 @@ const BloodEvaluation = ({ onBack }) => {
 
         } catch (err) {
             console.error(err);
-            alert("Error scanning image. Please try again.");
+            alert("Error parsing image. Please try a clearer photo.");
         } finally {
             setIsLoading(false);
             setStatusText('');
