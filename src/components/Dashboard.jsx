@@ -2,86 +2,94 @@ import React from 'react';
 import { Activity, Calculator, FileText, Utensils, MessageSquare } from 'lucide-react';
 
 const Dashboard = ({ userName, onNavigate }) => {
-    const options = [
-        {
-            id: 'bmi',
-            title: 'BMI Calculator',
-            desc: 'Check your health risk & vitals',
-            icon: <Calculator size={24} />,
-            color: 'var(--color-primary)',
-            bg: '#FFF0F1'
-        },
-        {
-            id: 'blood',
-            title: 'Blood Evaluation',
-            desc: 'Analyze reports & get insights',
-            icon: <FileText size={24} />,
-            color: '#4361EE',
-            bg: '#F0F4FF'
-        },
-        {
-            id: 'fitness',
-            title: 'Fitness Helper',
-            desc: 'Diet plans & weight goals',
-            icon: <Utensils size={24} />,
-            color: '#2A9D8F',
-            bg: '#EDF7F6'
-        },
-        {
-            id: 'chat',
-            title: 'AI Health Bot',
-            desc: 'Ask questions & get advice',
-            icon: <MessageSquare size={24} />,
-            color: '#7209B7',
-            bg: '#F3E8FF'
-        }
-    ];
+  const options = [
+    {
+      id: 'bmi',
+      title: 'BMI Calculator',
+      desc: 'Check your health risk & vitals',
+      icon: <Calculator size={24} />,
+      color: 'var(--color-primary)',
+      bg: '#FFF0F1'
+    },
+    {
+      id: 'blood',
+      title: 'Blood Evaluation',
+      desc: 'Analyze reports & get insights',
+      icon: <FileText size={24} />,
+      color: '#4361EE',
+      bg: '#F0F4FF'
+    },
+    {
+      id: 'fitness',
+      title: 'Fitness Helper',
+      desc: 'Diet plans & weight goals',
+      icon: <Utensils size={24} />,
+      color: '#2A9D8F',
+      bg: '#EDF7F6'
+    },
+    {
+      id: 'homeworkout',
+      title: 'Home Workout',
+      desc: '8 Basic exercises & calories',
+      icon: <Activity size={24} />,
+      color: '#FF6B6B',
+      bg: '#FFF0F1'
+    },
+    {
+      id: 'chat',
+      title: 'AI Health Bot',
+      desc: 'Ask questions & get advice',
+      icon: <MessageSquare size={24} />,
+      color: '#7209B7',
+      bg: '#F3E8FF'
+    }
+  ];
 
-    return (
-        <div className="dashboard-container fade-in">
-            <header className="dash-header">
-                <div className="avatar">
-                    {userName ? userName.charAt(0).toUpperCase() : 'U'}
-                </div>
-                <div className="welcome-text">
-                    <p>Welcome back,</p>
-                    <h3>{userName || 'User'}</h3>
-                </div>
-                <button className="notif-btn">
-                    <Activity size={20} />
-                    <span className="badge"></span>
-                </button>
-            </header>
+  return (
+    <div className="dashboard-container fade-in">
+      <header className="dash-header">
+        <div className="avatar">
+          {userName ? userName.charAt(0).toUpperCase() : 'U'}
+        </div>
+        <div className="welcome-text">
+          <p>Welcome back,</p>
+          <h3>{userName || 'User'}</h3>
+        </div>
+        <button className="notif-btn">
+          <Activity size={20} />
+          <span className="badge"></span>
+        </button>
+      </header>
 
-            <div className="stats-preview">
-                {/* Placeholder for quick stats or motivational quote */}
-                <div className="stat-card">
-                    <h4>Stay Hydrated! 💧</h4>
-                    <p>Drink 8 glasses of water today.</p>
-                </div>
+      <div className="stats-preview">
+        {/* Placeholder for quick stats or motivational quote */}
+        <div className="stat-card">
+          <h4>Stay Hydrated! 💧</h4>
+          <p>Drink 8 glasses of water today.</p>
+        </div>
+      </div>
+
+      <div className="options-grid">
+        {options.map((opt) => (
+          <button
+            key={opt.id}
+            className="option-card"
+            onClick={() => onNavigate(opt.id)}
+            style={{ '--hover-color': opt.color }}
+          >
+            <div className="icon-box" style={{ color: opt.color, backgroundColor: opt.bg }}>
+              {opt.icon}
             </div>
-
-            <div className="options-grid">
-                {options.map((opt) => (
-                    <button
-                        key={opt.id}
-                        className="option-card"
-                        onClick={() => onNavigate(opt.id)}
-                        style={{ '--hover-color': opt.color }}
-                    >
-                        <div className="icon-box" style={{ color: opt.color, backgroundColor: opt.bg }}>
-                            {opt.icon}
-                        </div>
-                        <div className="text-box">
-                            <h4>{opt.title}</h4>
-                            <p>{opt.desc}</p>
-                        </div>
-                        <div className="arrow">→</div>
-                    </button>
-                ))}
+            <div className="text-box">
+              <h4>{opt.title}</h4>
+              <p>{opt.desc}</p>
             </div>
+            <div className="arrow">→</div>
+          </button>
+        ))}
+      </div>
 
-            <style>{`
+      <style>{`
         .dashboard-container {
           padding: var(--spacing-md);
           padding-bottom: 80px; /* Space for bottom nav if added */
@@ -213,8 +221,8 @@ const Dashboard = ({ userName, onNavigate }) => {
           font-weight: bold;
         }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default Dashboard;

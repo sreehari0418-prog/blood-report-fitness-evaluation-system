@@ -5,6 +5,7 @@ import Dashboard from './components/Dashboard'
 import BMICalculator from './components/BMI/BMICalculator'
 import BloodEvaluation from './components/Blood/BloodEvaluation'
 import FitnessHelper from './components/Fitness/FitnessHelper'
+import HomeWorkout from './components/Fitness/HomeWorkout'
 import AIChat from './components/Chat/AIChat'
 import Toast from './components/Toast'
 
@@ -79,6 +80,7 @@ function App() {
             {currentPage === 'bmi' && <BMICalculator userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'blood' && <BloodEvaluation onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'fitness' && <FitnessHelper userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'homeworkout' && <HomeWorkout onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'chat' && <AIChat onBack={() => setCurrentPage('dashboard')} />}
         </div>
     )
