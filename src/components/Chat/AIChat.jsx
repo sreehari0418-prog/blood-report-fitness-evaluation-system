@@ -1,23 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Send, Bot, User } from 'lucide-react';
+import { ChevronLeft, Send, Bot, User, Sparkles } from 'lucide-react';
 
 const PREDEFINED_QA = [
-    { q: "What is a healthy BMI range?", a: "A healthy BMI range is typically between 18.5 and 24.9. Below 18.5 is considered underweight, and above 25 is considered overweight." },
-    { q: "How to improve Hemoglobin?", a: "To improve low hemoglobin (anemia), consume iron-rich foods like spinach, red meat, lentils, dates, and beetroot. Vitamin C helps absorption." },
-    { q: "Best Kerala breakfast for weight loss?", a: "Options include Puttu with Kadala currency (moderate quantity), Idli with Sambar, or Oats Upma. Avoid excess coconut and fried snacks." },
-    { q: "How to reduce cholesterol naturally?", a: "Limit saturated fats (red meat, full-fat dairy). Eat more soluble fiber (oats, beans, fruits). Exercise regularly and avoid smoking." },
-    { q: "What does high WBC mean?", a: "High White Blood Cell (WBC) count often indicates an infection, inflammation, or response to stress. Consult a doctor for proper diagnosis." },
-    { q: "Daily water intake recommendation?", a: "General rule: Drink about 3-4 liters per day. Or roughly 35ml per kg of body weight. Stay hydrated!" },
-    { q: "Foods to avoid for high blood sugar?", a: "Avoid sugary drinks, processed snacks, white bread/rice, and high-sugar fruits (like mango/grapes in excess). Focus on whole grains and veggies." },
-    { q: "Benefits of walking daily?", a: "Walking 30 mins daily improves heart health, aids weight management, boosts mood, and strengthens bones. It's the simplest effective exercise." },
-    { q: "Protein sources for vegetarians?", a: "Lentils (Dal), Chickpeas, Paneer, Tofu, Soy Chunks, Quinoa, Greek Yogurt, and Nuts (Almonds/Walnuts)." },
-    { q: "How often should I check my blood?", a: "For healthy adults, a general checkup once a year is recommended. If you have specific conditions like diabetes, follow your doctor's advice." }
+    { q: "What is healthy BMI?", a: "Healthy BMI is 18.5 - 24.9." },
+    { q: "Foods for Hemoglobin?", a: "Spinach, Red Meat, Dates, Beetroot." },
+    { q: "How to reduce Cholesterol?", a: "Oats, soluble fiber, less fried food." },
+    { q: "Water intake?", a: "3-4 Liters per day." }
 ];
+
+const TOPICS = ['blood', 'report', 'diet', 'food', 'fitness', 'exercise', 'weight', 'bmi', 'sugar', 'cholesterol', 'protein', 'health', 'heart', 'hemoglobin', 'fat', 'muscle', 'gym', 'workout', 'yoga', 'sleep', 'water', 'cardio', 'calories'];
 
 const AIChat = ({ onBack }) => {
     const [messages, setMessages] = useState([
-        { id: 1, text: "Hello! I'm your Health Assistant. Choose a question below or ask me about your health.", sender: 'bot' }
+        { id: 1, text: "Hello! I'm your Health Assistant. Ask me about your blood report, diet, or fitness.", sender: 'bot' }
     ]);
+    const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const messagesEndRef = useRef(null);
 
@@ -29,18 +26,51 @@ const AIChat = ({ onBack }) => {
         scrollToBottom();
     }, [messages]);
 
-    const handleQuestionClick = (qa) => {
-        // Add user message
+    const getBotResponse = (query) => {
+        const lowerQ = query.toLowerCase();
+
+        // Topic Check
+        const isRelevant = TOPICS.some(topic => lowerQ.includes(topic));
+
+        if (!isRelevant) {
+            return "I apologize, but I can only answer questions related to Health, Blood Reports, Diet, and Fitness. Please ask me a health-related question! 🏥";
+        }
+
+        if (lowerQ.includes('bmi')) return "BMI is a simple calculation using a person's height and weight. The formula is BMI = kg/m2.";
+        if (lowerQ.includes('diet') || lowerQ.includes('food')) return "A balanced diet emphasizes fruits, vegetables, whole grains, and fat-free or low-fat dairy products.";
+        if (lowerQ.includes('hemoglobin') || lowerQ.includes('blood')) return "Hemoglobin is essential for transferring oxygen in your blood. Iron-rich foods are key to maintaining healthy levels.";
+        if (lowerQ.includes('sugar') || lowerQ.includes('glucose')) return "High blood sugar can lead to diabetes. Reduce sugar intake and simple carbs like white rice and bread.";
+        if (lowerQ.includes('weight') || lowerQ.includes('fat')) return "To lose weight, you need a calorie deficit. To gain weight, a surplus. Protein is essential for both.";
+
+        return "That's a great health question. Make sure to consult a doctor for specific medical advice, but generally, staying active and eating whole foods is best.";
+    };
+
+    const handleSend = (e) => {
+        e.preventDefault();
+        if (!input.trim()) return;
+
+        const userMsg = { id: Date.now(), text: input, sender: 'user' };
+        setMessages(prev => [...prev, userMsg]);
+        setInput('');
+        setIsTyping(true);
+
+        setTimeout(() => {
+            const botMsg = { id: Date.now() + 1, text: getBotResponse(userMsg.text), sender: 'bot' };
+            setMessages(prev => [...prev, botMsg]);
+            setIsTyping(false);
+        }, 1200);
+    };
+
+    const handleChipClick = (qa) => {
         const userMsg = { id: Date.now(), text: qa.q, sender: 'user' };
         setMessages(prev => [...prev, userMsg]);
         setIsTyping(true);
 
-        // Simulate bot typing
         setTimeout(() => {
             const botMsg = { id: Date.now() + 1, text: qa.a, sender: 'bot' };
             setMessages(prev => [...prev, botMsg]);
             setIsTyping(false);
-        }, 1000);
+        }, 1200);
     };
 
     return (
@@ -49,7 +79,7 @@ const AIChat = ({ onBack }) => {
                 <button onClick={onBack} className="back-btn">
                     <ChevronLeft size={24} />
                 </button>
-                <h2>AI Health Bot</h2>
+                <h2>Health Assistant</h2>
             </div>
 
             <div className="chat-window">
@@ -73,15 +103,28 @@ const AIChat = ({ onBack }) => {
                 <div ref={messagesEndRef} />
             </div>
 
-            <div className="suggestions-area">
-                <h3>Suggested Questions</h3>
-                <div className="chips-container">
+            <div className="input-section">
+                {/* Suggestions Chips above input */}
+                <div className="chips-row">
                     {PREDEFINED_QA.map((qa, idx) => (
-                        <button key={idx} className="chip" onClick={() => handleQuestionClick(qa)} disabled={isTyping}>
+                        <button key={idx} className="chip" onClick={() => handleChipClick(qa)} disabled={isTyping}>
                             {qa.q}
                         </button>
                     ))}
                 </div>
+
+                <form onSubmit={handleSend} className="input-form">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Ask about health..."
+                        className="chat-input"
+                    />
+                    <button type="submit" className="send-btn">
+                        <Send size={20} />
+                    </button>
+                </form>
             </div>
 
             <style>{`
@@ -155,38 +198,57 @@ const AIChat = ({ onBack }) => {
            border-bottom-right-radius: 4px;
         }
 
-        .suggestions-area {
-           flex-shrink: 0;
-           padding-bottom: var(--spacing-md);
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
         }
-        .suggestions-area h3 {
-           font-size: var(--font-size-sm);
-           color: var(--color-text-secondary);
-           margin-bottom: var(--spacing-sm);
-        }
-        .chips-container {
+
+        .chips-row {
            display: flex;
-           flex-wrap: wrap;
+           overflow-x: auto;
            gap: 8px;
-           max-height: 150px;
-           overflow-y: auto;
+           padding-bottom: 5px;
+           scrollbar-width: none;
         }
         .chip {
+           white-space: nowrap;
            background: white;
            border: 1px solid var(--color-primary);
            color: var(--color-primary);
            padding: 6px 12px;
            border-radius: var(--radius-full);
-           font-size: var(--font-size-xs);
+           font-size: 11px;
            transition: all 0.2s;
         }
         .chip:hover {
            background: var(--color-primary);
            color: white;
         }
-        .chip:disabled {
-           opacity: 0.5;
-           cursor: not-allowed;
+
+        .input-form {
+            display: flex;
+            gap: 10px;
+            padding-bottom: 5px; /* for safe area */
+        }
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 99px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+            background: white;
+        }
+        .chat-input:focus { border-color: var(--color-primary); outline: none; }
+        .send-btn {
+            width: 46px; 
+            height: 46px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow-md);
         }
 
         .typing span {

@@ -1,17 +1,19 @@
 :root {
   /* Modern Palette */
-  --color-primary: #E63946; /* Blood Red */
+  --color-primary: #E63946;
+  /* Blood Red */
   --color-primary-dark: #B92B36;
   --color-primary-light: #FF6B76;
-  
+
   --color-background: #F8F9FA;
   --color-surface: #FFFFFF;
   --color-surface-translucent: rgba(255, 255, 255, 0.9);
-  
-  --color-text-main: #1D3557; /* Dark Blue */
+
+  --color-text-main: #1D3557;
+  /* Dark Blue */
   --color-text-secondary: #457B9D;
   --color-text-muted: #A8DADP;
-  
+
   --color-accent: #457B9D;
   --color-success: #2A9D8F;
   --color-warning: #E9C46A;
@@ -20,7 +22,7 @@
   /* Typography */
   --font-family-body: 'Inter', system-ui, sans-serif;
   --font-family-heading: 'Outfit', sans-serif;
-  
+
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -47,7 +49,7 @@
   --radius-md: 0.5rem;
   --radius-lg: 1rem;
   --radius-full: 9999px;
-  
+
   /* Transitions */
   --transition-fast: 150ms ease;
   --transition-normal: 300ms ease;
@@ -68,7 +70,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-family-heading);
   line-height: 1.2;
   font-weight: 700;
@@ -81,11 +88,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .app-container {
-  max-width: 480px; /* Mobile first constraint */
-  margin: 0 auto;
+  width: 100%;
   min-height: 100vh;
   background-color: var(--color-surface);
-  box-shadow: var(--shadow-xl);
+  box-shadow: none;
   position: relative;
   overflow-x: hidden;
 }
@@ -116,7 +122,7 @@ button {
   border-radius: var(--radius-lg);
   padding: var(--spacing-lg);
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .input-field {
