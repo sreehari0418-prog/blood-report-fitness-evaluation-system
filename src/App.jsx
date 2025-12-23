@@ -25,48 +25,23 @@ function App() {
             setUserData(JSON.parse(saved));
         }
 
-        // --- REAL NOTIFICATION SYSTEM ---
-        // 1. Request Permission on load (if supported)
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
+        // Simple reminder system (no welcome message)
+        const messages = [
+            "Drink a glass of water now! 💧",
+            "Time to stretch your legs! 🚶",
+            "Don't forget to eat a fruit today! 🍎",
+            "Stay motivated! You're doing great. 💪",
+            "Check your blood report regularly. 🩸",
+            "Avoid sugary drinks for better health. 🥤❌"
+        ];
 
-        // 2. Schedule Checks (Realistic)
-        const checkSchedule = () => {
-            const now = new Date();
-            const hour = now.getHours();
-
-            // Workout Reminder (e.g., 7 AM or 6 PM)
-            // Just for demo, we check if it's the exact minute to trigger ONCE
-            if (hour === 7 || hour === 18) {
-                sendNativeNotification("Time to Workout! 🏋️", "Consistency is key. 20 mins home workout?");
-            }
-
-            // Blood Check Reminder (Monthly logic - simplified)
-            const day = now.getDate();
-            if (day === 1 && hour === 9) {
-                sendNativeNotification("Blood Check Due 🩸", "It's the 1st of the month. Time for your routine checkup.");
-            }
-        };
-
-        const interval = setInterval(checkSchedule, 3600000); // Check every hour
-
-        // Also run a small demo check a few seconds after load just to prove it works
-        setTimeout(() => {
-            sendNativeNotification("App Active ⚡", "We will notify you for workouts & health checks.");
-        }, 5000);
+        const interval = setInterval(() => {
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            setToastMsg(randomMsg);
+        }, 120000); // Every 2 minutes (less frequent)
 
         return () => clearInterval(interval);
     }, []);
-
-    const sendNativeNotification = (title, body) => {
-        if ("Notification" in window && Notification.permission === "granted") {
-            new Notification(title, { body });
-        } else {
-            // Fallback to in-app toast for demo if permission denied
-            setToastMsg(`${title}: ${body}`);
-        }
-    };
 
     const handleLogin = (userAuth) => {
         setUser(userAuth);
