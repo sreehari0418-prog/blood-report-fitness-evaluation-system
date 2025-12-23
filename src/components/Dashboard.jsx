@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Activity, Calculator, FileText, Utensils, MessageSquare } from 'lucide-react';
+import ProfileMenu from './ProfileMenu';
 
-const Dashboard = ({ userName, onNavigate }) => {
+const Dashboard = ({ userName, onNavigate, onLogout }) => {
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+
   const options = [
     {
       id: 'bmi',
@@ -36,14 +39,6 @@ const Dashboard = ({ userName, onNavigate }) => {
       bg: '#FFF0F1'
     },
     {
-      id: 'shape',
-      title: 'AI Shape Predictor',
-      desc: 'Simulate weight loss/gain',
-      icon: <Activity size={24} />, // Re-using activity or maybe a User icon if available, let's stick to consistent style
-      color: '#8338ec',
-      bg: '#F3E8FF'
-    },
-    {
       id: 'chat',
       title: 'AI Health Bot',
       desc: 'Ask questions & get advice',
@@ -55,8 +50,16 @@ const Dashboard = ({ userName, onNavigate }) => {
 
   return (
     <div className="dashboard-container fade-in">
+      {showProfileMenu && (
+        <ProfileMenu
+          onClose={() => setShowProfileMenu(false)}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+        />
+      )}
+
       <header className="dash-header">
-        <div className="avatar">
+        <div className="avatar" onClick={() => setShowProfileMenu(true)} style={{ cursor: 'pointer' }}>
           {userName ? userName.charAt(0).toUpperCase() : 'U'}
         </div>
         <div className="welcome-text">

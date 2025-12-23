@@ -6,7 +6,7 @@ import BMICalculator from './components/BMI/BMICalculator'
 import BloodEvaluation from './components/Blood/BloodEvaluation'
 import FitnessHelper from './components/Fitness/FitnessHelper'
 import HomeWorkout from './components/Fitness/HomeWorkout'
-import ShapePredictor from './components/ShapePredictor'
+import WeightProgress from './components/WeightProgress'
 import AIChat from './components/Chat/AIChat'
 import Toast from './components/Toast'
 
@@ -89,19 +89,26 @@ function App() {
         setCurrentPage(pageId);
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('user_profile');
+        setUser(null);
+        setUserData(null);
+        setCurrentPage('login');
+    };
+
     return (
         <div className="app-container">
             {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
 
             {currentPage === 'login' && <Login onLogin={handleLogin} />}
             {currentPage === 'profile_setup' && <ProfileSetup onComplete={handleProfileComplete} />}
-            {currentPage === 'dashboard' && <Dashboard userName={userData?.name} onNavigate={handleNavigate} />}
+            {currentPage === 'dashboard' && <Dashboard userName={userData?.name} onNavigate={handleNavigate} onLogout={handleLogout} />}
 
             {currentPage === 'bmi' && <BMICalculator userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'blood' && <BloodEvaluation onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'fitness' && <FitnessHelper userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'homeworkout' && <HomeWorkout onBack={() => setCurrentPage('dashboard')} />}
-            {currentPage === 'shape' && <ShapePredictor onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'weightprogress' && <WeightProgress userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'chat' && <AIChat onBack={() => setCurrentPage('dashboard')} />}
         </div>
     )
