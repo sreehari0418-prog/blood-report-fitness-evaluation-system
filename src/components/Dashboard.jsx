@@ -36,6 +36,14 @@ const Dashboard = ({ userName, onNavigate }) => {
       bg: '#FFF0F1'
     },
     {
+      id: 'shape',
+      title: 'AI Shape Predictor',
+      desc: 'Simulate weight loss/gain',
+      icon: <Activity size={24} />, // Re-using activity or maybe a User icon if available, let's stick to consistent style
+      color: '#8338ec',
+      bg: '#F3E8FF'
+    },
+    {
       id: 'chat',
       title: 'AI Health Bot',
       desc: 'Ask questions & get advice',

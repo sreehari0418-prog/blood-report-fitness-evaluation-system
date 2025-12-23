@@ -6,6 +6,7 @@ import BMICalculator from './components/BMI/BMICalculator'
 import BloodEvaluation from './components/Blood/BloodEvaluation'
 import FitnessHelper from './components/Fitness/FitnessHelper'
 import HomeWorkout from './components/Fitness/HomeWorkout'
+import ShapePredictor from './components/ShapePredictor'
 import AIChat from './components/Chat/AIChat'
 import Toast from './components/Toast'
 
@@ -15,7 +16,7 @@ function App() {
     const [userData, setUserData] = useState(null) // Should retrieve from local storage on load
 
     // Notification State
-    const [notification, setNotification] = useState(null);
+    const [toastMsg, setToastMsg] = useState(null);
 
     React.useEffect(() => {
         // Attempt to load user
@@ -24,29 +25,48 @@ function App() {
             setUserData(JSON.parse(saved));
         }
 
-        // Scheduling Simulations
-        const messages = [
-            "Drink a glass of water now! 💧",
-            "Time to stretch your legs! 🚶",
-            "Don't forget to eat a fruit today! 🍎",
-            "Stay motivated! You're doing great. 💪",
-            "Check your blood report regularly. 🩸",
-            "Avoid sugary drinks for a better health. 🥤❌"
-        ];
+        // --- REAL NOTIFICATION SYSTEM ---
+        // 1. Request Permission on load (if supported)
+        if ("Notification" in window && Notification.permission !== "granted") {
+            Notification.requestPermission();
+        }
 
-        const interval = setInterval(() => {
-            // Randomly show notification every 30-60 seconds for demo (usually would be hours)
-            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-            setNotification(randomMsg);
-        }, 45000); // 45 seconds demo loop
+        // 2. Schedule Checks (Realistic)
+        const checkSchedule = () => {
+            const now = new Date();
+            const hour = now.getHours();
 
-        // Show one immediately on load after small delay
+            // Workout Reminder (e.g., 7 AM or 6 PM)
+            // Just for demo, we check if it's the exact minute to trigger ONCE
+            if (hour === 7 || hour === 18) {
+                sendNativeNotification("Time to Workout! 🏋️", "Consistency is key. 20 mins home workout?");
+            }
+
+            // Blood Check Reminder (Monthly logic - simplified)
+            const day = now.getDate();
+            if (day === 1 && hour === 9) {
+                sendNativeNotification("Blood Check Due 🩸", "It's the 1st of the month. Time for your routine checkup.");
+            }
+        };
+
+        const interval = setInterval(checkSchedule, 3600000); // Check every hour
+
+        // Also run a small demo check a few seconds after load just to prove it works
         setTimeout(() => {
-            if (!notification) setNotification("Welcome to Blood & Fit! Let's get healthy. 🚀");
-        }, 3000);
+            sendNativeNotification("App Active ⚡", "We will notify you for workouts & health checks.");
+        }, 5000);
 
         return () => clearInterval(interval);
     }, []);
+
+    const sendNativeNotification = (title, body) => {
+        if ("Notification" in window && Notification.permission === "granted") {
+            new Notification(title, { body });
+        } else {
+            // Fallback to in-app toast for demo if permission denied
+            setToastMsg(`${title}: ${body}`);
+        }
+    };
 
     const handleLogin = (userAuth) => {
         setUser(userAuth);
@@ -71,7 +91,7 @@ function App() {
 
     return (
         <div className="app-container">
-            {notification && <Toast message={notification} onClose={() => setNotification(null)} />}
+            {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
 
             {currentPage === 'login' && <Login onLogin={handleLogin} />}
             {currentPage === 'profile_setup' && <ProfileSetup onComplete={handleProfileComplete} />}
@@ -81,6 +101,7 @@ function App() {
             {currentPage === 'blood' && <BloodEvaluation onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'fitness' && <FitnessHelper userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'homeworkout' && <HomeWorkout onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'shape' && <ShapePredictor onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'chat' && <AIChat onBack={() => setCurrentPage('dashboard')} />}
         </div>
     )
