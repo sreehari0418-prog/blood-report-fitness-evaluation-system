@@ -135,6 +135,40 @@ const BMICalculator = ({ userProfile, onBack }) => {
                 </div>
             </div>
 
+            {/* Manual Validation Section */}
+            <div className="card manual-bmi-card">
+                <h3>Validate a BMI Value</h3>
+                <p className="sub-text">Enter a BMI number to check its category.</p>
+                <div className="manual-input-row">
+                    <input
+                        type="number"
+                        placeholder="e.g. 24.5"
+                        className="input-field"
+                        onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (val > 0) {
+                                // Re-using logic roughly for quick check
+                                // In a real refactor, we'd pull logic out. 
+                                // For now, simple check:
+                                let cat = '';
+                                if (val < 18.5) cat = 'Underweight 🔵';
+                                else if (val < 25) cat = 'Normal ✅';
+                                else if (val < 30) cat = 'Overweight ⚠️';
+                                else cat = 'Obese 🚨';
+
+                                // Update UI just for this section? 
+                                // Or maybe just show it inline.
+                                e.target.nextElementSibling.innerText = cat;
+                                e.target.nextElementSibling.style.display = 'block';
+                            } else {
+                                e.target.nextElementSibling.style.display = 'none';
+                            }
+                        }}
+                    />
+                    <div className="manual-result-badge" style={{ display: 'none' }}></div>
+                </div>
+            </div>
+
             <style>{`
         .bmi-container {
            padding: var(--spacing-md);
@@ -211,6 +245,29 @@ const BMICalculator = ({ userProfile, onBack }) => {
         .sub-text {
            font-size: 10px;
            color: #999;
+        }
+
+        .manual-bmi-card {
+            margin-top: 20px;
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+        }
+        .manual-bmi-card h3 { font-size: 16px; margin-bottom: 5px; }
+        .manual-input-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 15px; 
+            margin-top: 15px; 
+        }
+        .manual-input-row .input-field { width: 100px; padding: 8px; }
+        .manual-result-badge {
+            font-weight: bold;
+            font-size: 14px;
+            padding: 5px 10px;
+            background: white;
+            border-radius: 99px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
         }
       `}</style>
         </div>
