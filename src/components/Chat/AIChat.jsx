@@ -2,17 +2,17 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Send, Bot, User, Sparkles } from 'lucide-react';
 
 const PREDEFINED_QA = [
-    { q: "What is healthy BMI?", a: "Healthy BMI is 18.5 - 24.9." },
-    { q: "Foods for Hemoglobin?", a: "Spinach, Red Meat, Dates, Beetroot." },
-    { q: "How to reduce Cholesterol?", a: "Oats, soluble fiber, less fried food." },
-    { q: "Water intake?", a: "3-4 Liters per day." }
+    { q: "Best protein sources?", a: "Top protein sources: Eggs, Chicken Breast, Fish, Paneer, Lentils (Dal), Soy chunks, and Greek Yogurt." },
+    { q: "Pre-workout snacks?", a: "Eat 30-60 mins before: Banana, Oats, Peanut butter toast, or a handful of Almonds." },
+    { q: "How to build muscle?", a: "Focus on: 1. Resistance training (lifting weights), 2. High protein intake (1.6g per kg weight), 3. Progressive overload, 4. 7-8 hours sleep." },
+    { q: "Weight loss tips?", a: "To lose weight: Maintain a calorie deficit, increase fiber intake, stay hydrated, and include consistent Zone 2 cardio." }
 ];
 
-const TOPICS = ['blood', 'report', 'diet', 'food', 'fitness', 'exercise', 'weight', 'bmi', 'sugar', 'cholesterol', 'protein', 'health', 'heart', 'hemoglobin', 'fat', 'muscle', 'gym', 'workout', 'yoga', 'sleep', 'water', 'cardio', 'calories'];
+const TOPICS = ['blood', 'report', 'diet', 'food', 'fitness', 'exercise', 'weight', 'bmi', 'sugar', 'cholesterol', 'protein', 'health', 'heart', 'hemoglobin', 'fat', 'muscle', 'gym', 'workout', 'yoga', 'sleep', 'water', 'cardio', 'calories', 'supplement', 'recovery', 'strength'];
 
 const AIChat = ({ onBack }) => {
     const [messages, setMessages] = useState([
-        { id: 1, text: "Hello! I'm your Health Assistant. Ask me about your blood report, diet, or fitness.", sender: 'bot' }
+        { id: 1, text: "Hello! I'm your Health & Fitness Assistant. Ask me anything about your blood report, nutrition, or workout strategy.", sender: 'bot' }
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -33,16 +33,45 @@ const AIChat = ({ onBack }) => {
         const isRelevant = TOPICS.some(topic => lowerQ.includes(topic));
 
         if (!isRelevant) {
-            return "I apologize, but I can only answer questions related to Health, Blood Reports, Diet, and Fitness. Please ask me a health-related question! 🏥";
+            return "I apologize, but I'm specialized in Health, Blood Reports, Nutrition, and Fitness. For other topics, I might not have the best info. Ask me about your protein intake or blood levels! 🏥";
         }
 
-        if (lowerQ.includes('bmi')) return "BMI is a simple calculation using a person's height and weight. The formula is BMI = kg/m2.";
-        if (lowerQ.includes('diet') || lowerQ.includes('food')) return "A balanced diet emphasizes fruits, vegetables, whole grains, and fat-free or low-fat dairy products.";
-        if (lowerQ.includes('hemoglobin') || lowerQ.includes('blood')) return "Hemoglobin is essential for transferring oxygen in your blood. Iron-rich foods are key to maintaining healthy levels.";
-        if (lowerQ.includes('sugar') || lowerQ.includes('glucose')) return "High blood sugar can lead to diabetes. Reduce sugar intake and simple carbs like white rice and bread.";
-        if (lowerQ.includes('weight') || lowerQ.includes('fat')) return "To lose weight, you need a calorie deficit. To gain weight, a surplus. Protein is essential for both.";
+        // More detailed answering logic
+        if (lowerQ.includes('protein')) {
+            return "Protein is the building block of muscle. For vegetarians: Paneer, Dal, Chickpeas, Soy, and Milk are great. For non-vegetarians: Chicken breast, Fish, and Eggs are gold standards. Aim for 1.2g to 2g of protein per kg of body weight depending on your activity level.";
+        }
+        if (lowerQ.includes('pre-workout') || lowerQ.includes('before gym') || lowerQ.includes('before workout')) {
+            return "A good pre-workout snack should have easily digestible carbs. A banana is perfect. Alternatively, try oats or a slice of whole-grain bread with peanut butter. Avoid high-fat meals right before training as they digest slowly.";
+        }
+        if (lowerQ.includes('post-workout') || lowerQ.includes('after gym') || lowerQ.includes('after workout')) {
+            return "Post-workout, your body needs protein and some carbs to recover. A protein shake with a fruit, or a meal with chicken/paneer and rice/sweet potato is ideal. Try to eat within 1-2 hours after training.";
+        }
+        if (lowerQ.includes('muscle')) {
+            return "Building muscle requires consistent resistance training and a slight calorie surplus. Focus on compound movements like squats, pushups, and deadlifts. Don't forget recovery—muscles grow while you sleep, not while you train!";
+        }
+        if (lowerQ.includes('cardio')) {
+            return "Cardio is vital for heart health. For fat loss, Zone 2 cardio (where you can still talk while running/walking) is great. For endurance, try HIIT (High-Intensity Interval Training). Aim for at least 150 minutes of moderate activity per week.";
+        }
+        if (lowerQ.includes('bmi')) {
+            return "BMI (Body Mass Index) helps categorize weight. A healthy range is 18.5 - 24.9. However, it doesn't measure body fat percentage, so muscular people might show as 'overweight' despite being fit. Check your waist-to-height ratio for more accuracy.";
+        }
+        if (lowerQ.includes('diet') || lowerQ.includes('food')) {
+            return "A healthy diet is 80% whole foods. Focus on 'eating the rainbow' (variety of veg), adequate protein, and healthy fats. In Kerala, try to balance parboiled rice with more fish, pulses, and leafy greens while reducing fried snacks.";
+        }
+        if (lowerQ.includes('hemoglobin') || lowerQ.includes('blood')) {
+            return "Normal hemoglobin levels are 12-16 g/dL. Low levels cause fatigue during workouts. Boost it with iron-rich foods like spinach, beetroot, pomegranate, and red meat. Always take Vitamin C (like lemon) with iron for better absorption.";
+        }
+        if (lowerQ.includes('sugar') || lowerQ.includes('glucose')) {
+            return "To manage blood sugar, focus on complex carbs (brown rice, oats) instead of simple carbs (white sugar, maida). Fiber slows down sugar absorption. Regular walking after meals significantly helps sensitive insulin levels.";
+        }
+        if (lowerQ.includes('weight') || lowerQ.includes('fat')) {
+            return "Fat loss happens when you are in a calorie deficit (burning more than you eat). Avoid 'crash diets'. Instead, focus on high-protein, high-fiber intake and consistent movement to keep your metabolism high.";
+        }
+        if (lowerQ.includes('sleep') || lowerQ.includes('rest')) {
+            return "Sleep is the most underrated fitness tool. Most recovery and muscle growth happen during deep sleep. Aim for 7-9 hours of quality rest per night for optimal hormones and performance.";
+        }
 
-        return "That's a great health question. Make sure to consult a doctor for specific medical advice, but generally, staying active and eating whole foods is best.";
+        return "That's a valid health query. Generally, focusing on whole foods, 7-8 hours of sleep, and 30 minutes of daily movement will solve 90% of health issues. Consult a professional for specific clinic advice!";
     };
 
     const handleSend = (e) => {
