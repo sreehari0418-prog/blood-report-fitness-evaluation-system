@@ -1,0 +1,25 @@
+# Core ML Libraries
+torch
+torchvision
+transformers
+datasets
+accelerate
+
+# Image Processing
+opencv-python
+pillow
+pytesseract
+pdf2image
+
+# Data Handling
+pandas
+numpy
+scikit-learn
+
+# API & Utils
+flask
+flask-cors
+python-dotenv
+tqdm
+requests
+gunicorn

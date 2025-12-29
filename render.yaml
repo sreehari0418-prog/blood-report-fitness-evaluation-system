@@ -1,0 +1,26 @@
+services:
+  # 1. Python Backend (Web Service)
+  - type: web
+    name: blood-report-backend
+    env: python
+    region: singapore # Closest to India
+    buildCommand: cd python-backend && pip install -r requirements.txt
+    startCommand: cd python-backend && gunicorn server:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
+    autoDeploy: true
+
+  # 2. React Frontend (Static Site)
+  - type: static
+    name: blood-report-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: blood-report-backend
+          property: url
+    autoDeploy: true

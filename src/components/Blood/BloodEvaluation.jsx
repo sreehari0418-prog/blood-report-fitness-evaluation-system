@@ -72,12 +72,30 @@ const BloodEvaluation = ({ onBack }) => {
     const [manualValue, setManualValue] = useState('');
     const [manualResult, setManualResult] = useState(null);
 
+    // Advanced Mode State
+    const [scanMode, setScanMode] = useState('basic'); // 'basic' | 'advanced'
+    const [serverStatus, setServerStatus] = useState('checking');
+
     useEffect(() => {
+        // Check if local python server is running
+        checkServer();
+
         const saved = localStorage.getItem('blood_reports');
         if (saved) {
             setHistory(JSON.parse(saved));
         }
     }, []);
+
+    const checkServer = async () => {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        try {
+            const res = await fetch(`${API_URL}/health`);
+            if (res.ok) setServerStatus('online');
+            else setServerStatus('offline');
+        } catch (e) {
+            setServerStatus('offline');
+        }
+    };
 
     // --- OCR LOGIC ---
     const processImage = async (file) => {
@@ -158,9 +176,62 @@ const BloodEvaluation = ({ onBack }) => {
         // Check if it's an image
         if (file.type.startsWith('image/')) {
             setReport(file);
-            processImage(file);
+
+            if (scanMode === 'advanced' && serverStatus === 'online') {
+                processWithServer(file);
+            } else {
+                processImage(file);
+            }
         } else {
             alert("Please upload an Image (JPG/PNG) for OCR scanning.");
+        }
+    };
+
+    // --- SERVER SIDE LOGIC ---
+    const processWithServer = async (file) => {
+        setIsLoading(true);
+        setStatusText('Sending to ML Neural Network...');
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+        try {
+            const response = await fetch(`${API_URL}/analyze`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) throw new Error(data.error || "Server Error");
+
+            console.log("ML Results:", data);
+
+            // For now, since model isn't trained, we might not get perfect keys.
+            // We interpret the raw results or mock success for demo.
+            // In a real app, 'extract.py' would return exact keys like 'hemoglobin'.
+
+            // DEMO FALLBACK: If raw_results is empty (untrained model), use Tesseract as backup
+            // or just notify user.
+            if (!data.raw_results || data.raw_results.length === 0) {
+                alert("ML Model returned no data (Model likely needs training). Switching to client-side OCR for this scan.");
+                processImage(file); // Fallback
+                return;
+            }
+
+            // If we had valid data, we would parse it here:
+            // const extractedValues = mapServerDataToValues(data.raw_results);
+            // analyzeReport({ date: ..., values: extractedValues });
+
+        } catch (err) {
+            console.error(err);
+            alert("Error connecting to Python Backend. Make sure 'server.py' is running!");
+            processImage(file); // Fallback to basic
+        } finally {
+            setIsLoading(false);
+            setStatusText('');
         }
     };
 
@@ -305,6 +376,27 @@ const BloodEvaluation = ({ onBack }) => {
                         </div>
                         <h3>Upload Report Image</h3>
                         <p>Take a clear photo of your report. AI will scan for values.</p>
+
+                        <h3>Upload Report Image</h3>
+                        <p>Take a clear photo of your report. AI will scan for values.</p>
+
+                        {/* Mode Toggle */}
+                        <div className="scan-mode-toggle">
+                            <button
+                                className={`mode-btn ${scanMode === 'basic' ? 'active' : ''}`}
+                                onClick={() => setScanMode('basic')}
+                            >
+                                Basic (Browser)
+                            </button>
+                            <button
+                                className={`mode-btn ${scanMode === 'advanced' ? 'active' : ''}`}
+                                onClick={() => setScanMode('advanced')}
+                            >
+                                Advanced (Python ML)
+                                {serverStatus === 'online' && <span className="dot online" title="Server Online"></span>}
+                                {serverStatus === 'offline' && <span className="dot offline" title="Server Offline (Run server.py)"></span>}
+                            </button>
+                        </div>
 
                         <label className="btn-secondary upload-btn">
                             {isLoading ? (statusText || 'Scanning...') : 'Select Image (JPG/PNG)'}
@@ -492,6 +584,29 @@ const BloodEvaluation = ({ onBack }) => {
         .food-list, .fitness-list { font-size: 11px; margin-top: 4px; line-height: 1.4; color: #78350f; }
         .fitness-list { font-style: italic; color: #b45309; }
         .fitness-tip { margin-top: 8px; font-size: 11px; color: #b45309; background: #fffbeb; padding: 8px; border-radius: 4px; border: 1px dashed #f59e0b; }
+
+        .scan-mode-toggle {
+            display: flex; justify-content: center; gap: 10px; margin: 15px 0;
+        }
+        .mode-btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 99px;
+            cursor: pointer;
+            position: relative;
+        }
+        .mode-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+        .dot {
+            width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-left: 5px;
+        }
+        .dot.online { background: #22c55e; }
+        .dot.offline { background: #ef4444; }
       `}</style>
         </div>
     );
