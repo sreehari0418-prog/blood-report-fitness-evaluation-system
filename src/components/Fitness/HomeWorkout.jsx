@@ -118,6 +118,19 @@ const HomeWorkout = ({ onBack }) => {
                             <span className="cal-pill">{selectedWorkout.calories}</span>
                         </div>
 
+                        {/* ANIMATION AREA */}
+                        <div className={`animation-stage anim-${selectedWorkout.name.split(' ')[0] || 'default'}`}>
+                            <div className="stick-figure">
+                                <div className="head"></div>
+                                <div className="body"></div>
+                                <div className="arms"></div>
+                                <div className="legs">
+                                    <div className="leg-l"></div>
+                                    <div className="leg-r"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div className="modal-body">
                             <h4><Info size={16} /> How to do it:</h4>
                             <ul className="steps-list">
@@ -331,6 +344,102 @@ const HomeWorkout = ({ onBack }) => {
                 .m-stat { display: flex; flex-direction: column; font-size: 12px; color: #64748b; }
                 .m-stat strong { font-size: 16px; color: var(--color-text-main); }
                 
+                /* ANIMATION CONTAINER */
+                .animation-stage {
+                    width: 100%;
+                    height: 180px;
+                    background: #f0fdf4;
+                    border-radius: var(--radius-md);
+                    margin-bottom: 20px;
+                    position: relative;
+                    overflow: hidden;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    border: 2px solid #bbf7d0;
+                }
+                
+                /* Character Elements */
+                .stick-figure {
+                    position: relative;
+                    width: 40px;
+                    height: 100px;
+                }
+                .head {
+                    width: 20px; height: 20px; background: #15803d; border-radius: 50%;
+                    position: absolute; top: 0; left: 10px;
+                }
+                .body {
+                    width: 4px; height: 40px; background: #15803d;
+                    position: absolute; top: 20px; left: 18px;
+                }
+                .arms {
+                    width: 40px; height: 4px; background: #15803d;
+                    position: absolute; top: 30px; left: 0;
+                }
+                .legs {
+                    width: 40px; height: 40px;
+                    position: absolute; top: 60px; left: 0;
+                }
+                .leg-l, .leg-r {
+                    width: 4px; height: 40px; background: #15803d;
+                    position: absolute; top: 0;
+                }
+                .leg-l { left: 10px; transform: rotate(-10deg); }
+                .leg-r { right: 10px; transform: rotate(10deg); }
+
+
+                /* Workout Specific Animations */
+                
+                /* Squats: Simple Up/Down */
+                .anim-Squats .stick-figure {
+                    animation: squat 1.5s infinite ease-in-out;
+                }
+                @keyframes squat {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(30px) scaleY(0.8); }
+                }
+
+                /* Jump Jacks: Arms/Legs spread */
+                .anim-Jumping .arms, .anim-Jumping .legs {
+                    animation: jack 1s infinite steps(2);
+                }
+                @keyframes jack {
+                    0% { transform: scaleX(1); }
+                    50% { transform: scaleX(1.5); }
+                }
+
+                /* Pushups: Rotate and translate */
+                .anim-Push-ups .stick-figure {
+                    transform: rotate(90deg);
+                    animation: pushup 1.5s infinite ease-in-out;
+                }
+                @keyframes pushup {
+                    0%, 100% { transform: rotate(90deg) translateX(0); }
+                    50% { transform: rotate(90deg) translateX(20px); }
+                }
+
+                /* Burpees */
+                .anim-Burpees .stick-figure {
+                    animation: burpee 2s infinite;
+                }
+                @keyframes burpee {
+                    0% { transform: translateY(0); }
+                    25% { transform: translateY(40px) rotate(90deg); /* Down */ }
+                    50% { transform: translateY(40px) rotate(90deg); /* Pushup */ }
+                    75% { transform: translateY(0); /* Jump */ }
+                    100% { transform: translateY(0); }
+                }
+
+                /* Default Bounce */
+                .anim-default .stick-figure {
+                    animation: bounce 1s infinite;
+                }
+                @keyframes bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+
                 .start-now-btn {
                     background: var(--color-primary);
                     color: white;

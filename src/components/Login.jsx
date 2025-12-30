@@ -8,6 +8,8 @@ const Login = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -57,8 +59,6 @@ const Login = ({ onLogin }) => {
     <div className="login-container">
       <div className="login-card fade-in">
         <div className="logo-section">
-          {/* Logo Path Fix: user reported issue with /app_logo.jpg. 
-              Using 'app_logo.jpg' (relative) works better for GH Pages subdirs */}
           <img src="app_logo.jpg" alt="BloodFit Logo" className="app-logo" />
           <h1>Blood & Fit</h1>
           <p>Your personal health companion</p>
@@ -80,18 +80,31 @@ const Login = ({ onLogin }) => {
 
           <div className="form-group">
             <label htmlFor="password">Password</label>
-            <input
-              type="password"
-              id="password"
-              className="input-field"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div className="password-wrapper">
+              <input
+                type={showPassword ? "text" : "password"}
+                id="password"
+                className="input-field"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+              <button
+                type="button"
+                className="toggle-password"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
           </div>
 
-          {error && <p className="error-msg">{error}</p>}
+          {error && (
+            <div className="error-box fade-in">
+              <span>⚠️ {error}</span>
+            </div>
+          )}
 
           <button type="submit" className="btn-primary" disabled={isLoading}>
             {isLoading ? <span className="spinner"></span> : (isLogin ? 'Login' : 'Sign Up')}
@@ -113,7 +126,7 @@ const Login = ({ onLogin }) => {
           align-items: center;
           justify-content: center;
           padding: var(--spacing-md);
-          background: linear-gradient(135deg, #FFF0F1 0%, #FFFFFF 100%);
+          background: linear-gradient(135deg, #fff1f2 0%, #fff 100%);
         }
         
         .login-card {
@@ -122,7 +135,7 @@ const Login = ({ onLogin }) => {
            background: var(--color-surface);
            padding: var(--spacing-xl);
            border-radius: var(--radius-lg);
-           box-shadow: var(--shadow-lg);
+           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
            text-align: center;
         }
 
@@ -131,29 +144,30 @@ const Login = ({ onLogin }) => {
         }
 
         .app-logo {
-          width: 100px;
-          height: 100px;
+          width: 80px;
+          height: 80px;
           object-fit: contain;
           margin-bottom: var(--spacing-md);
-          border-radius: 50%;
+          border-radius: 20px; /* Softer edges */
           box-shadow: var(--shadow-md);
         }
 
         .logo-section h1 {
-          font-size: var(--font-size-2xl);
-          color: var(--color-primary-dark);
-          margin-bottom: var(--spacing-xs);
+          font-size: 24px;
+          color: var(--color-text-main);
+          margin-bottom: 5px;
+          font-weight: 800;
         }
 
         .logo-section p {
           color: var(--color-text-secondary);
-          font-size: var(--font-size-sm);
+          font-size: 14px;
         }
 
         .login-form {
           display: flex;
           flex-direction: column;
-          gap: var(--spacing-lg);
+          gap: 20px;
         }
 
         .form-group {
@@ -162,29 +176,70 @@ const Login = ({ onLogin }) => {
 
         .form-group label {
           display: block;
-          margin-bottom: var(--spacing-xs);
-          font-weight: 500;
+          margin-bottom: 8px;
+          font-weight: 600;
           color: var(--color-text-main);
-          font-size: var(--font-size-sm);
+          font-size: 13px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .input-field:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(225, 29, 72, 0.1);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            font-size: 12px;
+            color: var(--color-primary);
+            font-weight: 600;
+            cursor: pointer;
         }
 
         .btn-primary {
           width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
+          padding: 12px;
+          background: var(--color-primary);
+          color: white;
+          border: none;
+          border-radius: var(--radius-md);
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          transition: background 0.2s;
         }
+        .btn-primary:active { transform: scale(0.98); }
 
-        .error-msg {
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
             color: #ef4444;
+            padding: 10px;
+            border-radius: var(--radius-md);
             font-size: 12px;
             text-align: left;
-            margin-top: -10px;
+            display: flex; gap: 8px;
         }
 
         .footer-text {
-          margin-top: var(--spacing-lg);
-          font-size: var(--font-size-sm);
+          margin-top: 25px;
+          font-size: 13px;
           color: var(--color-text-secondary);
         }
 
@@ -193,6 +248,7 @@ const Login = ({ onLogin }) => {
           font-weight: 600;
           cursor: pointer;
         }
+        .link:hover { text-decoration: underline; }
 
         .spinner {
           width: 20px;

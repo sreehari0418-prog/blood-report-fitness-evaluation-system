@@ -112,36 +112,71 @@ const BloodEvaluation = ({ onBack }) => {
 
             console.log("Raw OCR Text:", text);
 
-            // 2. Parse text with improved regex
+            // 2. Parse text with improved regex for tables
+            const rows = text.split('\n');
             const extractedValues = {};
-            // Normalize: remove special chars, extra spaces, toLowerCase
-            const normalizedText = text.toLowerCase()
-                .replace(/[^a-z0-9\s\.]/g, ' ') // keep dots for decimals
-                .replace(/\s+/g, ' ');
 
-            Object.keys(MEDICAL_RANGES).forEach(key => {
-                // Prepare variations of the key
-                // e.g. "hemoglobin", "haemoglobin"
-                const searchKey = key.replace(/_/g, ' ');
+            // Normalize helper
+            const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9.]/g, '');
 
-                // Robust Regex:
-                // \b${searchKey} : Find the word
-                // .{0,30} : Allow up to 30 chars of junk/units/separators
-                // (\d{1,3}(\.\d{1,2})?) : Capture number (1-3 digits, optional decimal)
-                // We handle common OCR errors in regex if possible, but pure regex is limited.
-                const regex = new RegExp(`${searchKey}.{0,30}\\s(\\d{1,3}(\\.\\d{1,2})?)`, 'i');
+            // Specific Keyword mapping based on uploaded images
+            const KEYWORD_MAP = {
+                'hemoglobin': ['hemoglobin', 'haemoglobin', 'hb', 'hgb'],
+                'total_count': ['total leucocyte count', 'tlc', 'wbc count', 'white blood cells', 'total count'],
+                'neutrophil': ['neutrophils', 'polymorphs', 'neutrophil'],
+                'lymphocyte': ['lymphocytes', 'lymphocyte'],
+                'eosinophil': ['eosinophils', 'eosinophil'],
+                'monocyte': ['monocytes', 'monocyte'],
+                'basophil': ['basophils', 'basophil'],
+                'platelet_count': ['platelet count', 'platelet', 'plt'],
+                'rbc_count': ['rbc count', 'total rbc', 'red blood cells', 'erythrocyte'],
+                'mcv': ['mcv', 'mean corpuscular volume'],
+                'mch': ['mch', 'mean corpuscular hemoglobin'],
+                'mchc': ['mchc', 'mean corpuscular hemoglobin concentration'],
+                'glucose_fasting': ['glucose fasting', 'fbs', 'fasting blood sugar'],
+                'glucose_pp': ['glucose pp', 'ppbs', 'post prandial'],
+                'cholesterol': ['total cholesterol', 'serum cholesterol'],
+                'creatinine': ['serum creatinine', 'creatinine'],
+                'uric_acid': ['serum uric acid', 'uric acid'],
+                'tsh': ['thyroid stimulating hormone', 'tsh', 'thyrotropin'],
+                't3': ['triiodothyronine', 'total t3', 't3'],
+                't4': ['thyroxine', 'total t4', 't4']
+            };
 
-                const match = normalizedText.match(regex);
-                if (match && match[1]) {
-                    extractedValues[key] = parseFloat(match[1]);
-                }
+            rows.forEach(row => {
+                const lowerRow = row.toLowerCase().trim();
+                if (!lowerRow) return;
+
+                // Try to match each parameter
+                Object.keys(KEYWORD_MAP).forEach(paramKey => {
+                    const synonyms = KEYWORD_MAP[paramKey];
+                    const foundSynonym = synonyms.find(s => lowerRow.includes(s));
+
+                    if (foundSynonym && !extractedValues[paramKey]) {
+                        // Strategy 1: Look for numbers in the same line
+                        // Remove the parameter name to avoid matching numbers in the name (rare but possible)
+                        const remainingText = lowerRow.replace(foundSynonym, '');
+
+                        // Regex to find floating point numbers
+                        const numbers = remainingText.match(/(\d+(\.\d+)?)/g);
+
+                        if (numbers && numbers.length > 0) {
+                            // HEURISTIC: usually the first number is the Result, second is Range or Unit specific
+                            // But sometimes the first number is just a serial number or part of range if formatted badly
+                            // Let's assume the first distinct standalone number is the value.
+                            // We filter out extremely small/large numbers if not reasonable, or check range
+
+                            const val = parseFloat(numbers[0]);
+
+                            // Basic Validation: Don't pick up "01" from "01-02-2023" date if mixed
+                            // Check if valid number for this param (simple range check or not NaN)
+                            if (!isNaN(val)) {
+                                extractedValues[paramKey] = val;
+                            }
+                        }
+                    }
+                });
             });
-
-            // Fallback for tricky ones: Platelets often read as "platelet count" or just "platelet"
-            if (!extractedValues['platelet_count'] && normalizedText.includes('platelet')) {
-                const match = normalizedText.match(/platelet.{0,20}\s(\d+(\.\d+)?)/i);
-                if (match) extractedValues['platelet_count'] = parseFloat(match[1]);
-            }
 
             // 3. Analyze only what was found
             if (Object.keys(extractedValues).length === 0) {
@@ -374,9 +409,6 @@ const BloodEvaluation = ({ onBack }) => {
                         <div className="icon-circle">
                             <Upload size={32} color="var(--color-primary)" />
                         </div>
-                        <h3>Upload Report Image</h3>
-                        <p>Take a clear photo of your report. AI will scan for values.</p>
-
                         <h3>Upload Report Image</h3>
                         <p>Take a clear photo of your report. AI will scan for values.</p>
 
