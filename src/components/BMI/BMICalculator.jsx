@@ -111,10 +111,13 @@ const BMICalculator = ({ userProfile, onBack }) => {
                     </div>
                 </div>
 
-                <div className="risk-indicator">
-                    <p>Health Risk: <span className={bmi >= 25 || bmi < 18.5 ? 'text-danger' : 'text-success'}>
-                        {bmi >= 30 ? 'High' : (bmi >= 25 ? 'Moderate' : (bmi < 18.5 ? 'Moderate' : 'Low'))}
-                    </span></p>
+                <div className="risk-indicator" style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', marginTop: '20px' }}>
+                    <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Health Risk Assessment</p>
+                    <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
+                        <span className={bmi >= 25 || bmi < 18.5 ? 'text-danger' : 'text-success'}>
+                            {bmi >= 30 ? 'High Risk 🚨' : (bmi >= 25 ? 'Moderate Risk ⚠️' : (bmi < 18.5 ? 'Moderate Risk ⚠️' : 'Low Risk ✅'))}
+                        </span>
+                    </p>
                 </div>
             </div>
 

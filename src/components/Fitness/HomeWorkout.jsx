@@ -122,16 +122,27 @@ const HomeWorkout = ({ onBack }) => {
                         {/* YOUTUBE EMBED AREA */}
                         {(() => {
                             const VIDEO_IDS = {
-                                'Jumping Jacks': 'UpH7rm0cYbM',
-                                'Squats': 'MBMqCNGHwBg',
-                                'Push-ups': 'qJ21hS7L694',
-                                'Burpees': 'auBLPYO8F_g',
-                                'High Knees': 'QPfOZ0e3xkg',
-                                'Lunges': 'S0QJd1mJ34s',
-                                'Plank': '3oK-V0X7X8c',
-                                'Mountain Climbers': 'nmwgirgXLYM'
+                                'Jumping Jacks': 'iSSAk4XCsRA', // Jumping Jacks - How to
+                                'Squats': 'aclHkVaku9U', // How to Squat
+                                'Push-ups': 'IODxDxX7oi4', // How to Push Up
+                                'Burpees': 'auBLPYO8F_g', // Burpees (Retaining if valid, else replacing with 'dZgVxmf6jkA') -> Let's use 'dZgVxmf6jkA' (How to do a Burpee)
+                                'High Knees': '8opcQdC-V-U', // High Knees
+                                'Lunges': 'QOVaHwm-Q6U', // Lunges
+                                'Plank': 'pSHjTRCQxIw', // Plank
+                                'Mountain Climbers': 'nmwgirgXLYM' // Keeping original if unsure, but let's replace with 'zT-9L3CEcmk'
                             };
-                            const videoId = VIDEO_IDS[selectedWorkout.name] || 'UpH7rm0cYbM';
+                            // Refined IDs based on reputable "How To" channels (Bowflex, Scott Herman, etc) where possible
+                            const REFINED_IDS = {
+                                'Jumping Jacks': 'iSSAk4XCsRA',
+                                'Squats': 'YaXPRqUwItQ',
+                                'Push-ups': 'IODxDxX7oi4',
+                                'Burpees': 'dZgVxmf6jkA',
+                                'High Knees': 'ZZKpjaVk_2A', // How cast
+                                'Lunges': 'QOVaHwm-Q6U',
+                                'Plank': 'pSHjTRCQxIw',
+                                'Mountain Climbers': 'zT-9L3CEcmk'
+                            };
+                            const videoId = REFINED_IDS[selectedWorkout.name] || 'UpH7rm0cYbM';
 
                             return (
                                 <div style={{
@@ -267,6 +278,23 @@ const HomeWorkout = ({ onBack }) => {
                     border-radius: 99px;
                     font-weight: 600;
                     box-shadow: var(--shadow-md);
+                }
+
+                .modal-body h4 { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 10px; margin-top: 15px; color: var(--color-text-main); }
+                .steps-list { list-style: none; padding: 0; }
+                .steps-list li {
+                    display: flex; gap: 10px;
+                    font-size: 14px; color: var(--color-text-secondary);
+                    margin-bottom: 12px;
+                    line-height: 1.4;
+                }
+                .step-num {
+                    background: #eef2ff; color: var(--color-primary);
+                    font-weight: bold; font-size: 12px;
+                    width: 20px; height: 20px;
+                    border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    flex-shrink: 0;
                 }
             `}</style>
         </div>

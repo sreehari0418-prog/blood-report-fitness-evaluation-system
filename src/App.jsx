@@ -84,7 +84,7 @@ function App() {
             {currentPage === 'fitness' && <FitnessHelper userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'homeworkout' && <HomeWorkout onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'weightprogress' && <WeightProgress userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
-            {currentPage === 'chat' && <AIChat onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'chat' && <AIChat userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
         </div>
     )
 }

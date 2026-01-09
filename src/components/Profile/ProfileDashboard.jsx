@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, User, Activity, FileText, Settings, Heart, Save, Share2 } from 'lucide-react';
+// PDF Import removed
+
+// ... (inside component) ...
 
 const ProfileDashboard = ({ user, onClose, onLogout }) => {
+    {/* Export button removed */ }
     const [activeTab, setActiveTab] = useState('details'); // details, health, reports
     const [isEditing, setIsEditing] = useState(false);
 
@@ -197,9 +201,7 @@ const ProfileDashboard = ({ user, onClose, onLogout }) => {
                                 ))}
                             </div>
                         )}
-                        <button className="export-btn" onClick={() => alert("Exporting PDF... (Simulated)")}>
-                            <Share2 size={16} /> Export History PDF
-                        </button>
+                        {/* Export button removed */}
                     </div>
                 )}
             </div>

@@ -10,9 +10,9 @@ const PREDEFINED_QA = [
 
 const TOPICS = ['blood', 'report', 'diet', 'food', 'fitness', 'exercise', 'weight', 'bmi', 'sugar', 'cholesterol', 'protein', 'health', 'heart', 'hemoglobin', 'fat', 'muscle', 'gym', 'workout', 'yoga', 'sleep', 'water', 'cardio', 'calories', 'supplement', 'recovery', 'strength'];
 
-const AIChat = ({ onBack }) => {
+const AIChat = ({ onBack, userProfile }) => {
     const [messages, setMessages] = useState([
-        { id: 1, text: "Hello! I'm your Health & Fitness Assistant. Ask me anything about your blood report, nutrition, or workout strategy.", sender: 'bot' }
+        { id: 1, text: `Hello ${userProfile?.name ? userProfile.name.split(' ')[0] : ''}! I'm your Health Assistant. Ask me about your blood report, diet, or workout.`, sender: 'bot' }
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -29,49 +29,58 @@ const AIChat = ({ onBack }) => {
     const getBotResponse = (query) => {
         const lowerQ = query.toLowerCase();
 
+        // Personalization Context
+        const diseases = userProfile?.diseases ? userProfile.diseases.toLowerCase() : '';
+        const allergies = userProfile?.allergies ? userProfile.allergies.toLowerCase() : '';
+
         // Topic Check
         const isRelevant = TOPICS.some(topic => lowerQ.includes(topic));
 
         if (!isRelevant) {
-            return "I apologize, but I'm specialized in Health, Blood Reports, Nutrition, and Fitness. For other topics, I might not have the best info. Ask me about your protein intake or blood levels! 🏥";
+            return "I apologize, but I'm specialized in Health, Blood Reports, Nutrition, and Fitness. Ask me about your protein intake or blood levels! 🏥";
         }
 
-        // More detailed answering logic
+        // Disease/Condition Specific Responses
+        if (diseases.includes('diabetes') && (lowerQ.includes('sugar') || lowerQ.includes('sweet') || lowerQ.includes('fruit'))) {
+            return "Since you mentioned Diabetes, be very careful with high GI fruits like mangoes and chikoo. Opt for apples, berries, and papaya. Monitor your blood sugar regularly and avoid refined sugars completely.";
+        }
+        if (diseases.includes('hypertension') || diseases.includes('bp')) {
+            if (lowerQ.includes('salt') || lowerQ.includes('diet')) {
+                return "For hypertension management, the DASH diet is recommended. Reduce sodium intake (salt), avoid pickles and papad, and increase potassium-rich foods like bananas and leafy greens.";
+            }
+        }
+
+        // Detailed Logic
         if (lowerQ.includes('protein')) {
-            return "Protein is the building block of muscle. For vegetarians: Paneer, Dal, Chickpeas, Soy, and Milk are great. For non-vegetarians: Chicken breast, Fish, and Eggs are gold standards. Aim for 1.2g to 2g of protein per kg of body weight depending on your activity level.";
+            return "Protein is the building block. vegetarians: Paneer, Dal, Soy. Non-veg: Chicken, Fish. " + (diseases.includes('kidney') ? "However, since you have kidney concerns, please consult your doctor for the exact protein limit." : "Aim for 1.2g/kg body weight.");
         }
-        if (lowerQ.includes('pre-workout') || lowerQ.includes('before gym') || lowerQ.includes('before workout')) {
-            return "A good pre-workout snack should have easily digestible carbs. A banana is perfect. Alternatively, try oats or a slice of whole-grain bread with peanut butter. Avoid high-fat meals right before training as they digest slowly.";
+        if (lowerQ.includes('pre-workout') || lowerQ.includes('before gym')) {
+            return "A banana or oatmeal 45 mins before workout is great energy.";
         }
-        if (lowerQ.includes('post-workout') || lowerQ.includes('after gym') || lowerQ.includes('after workout')) {
-            return "Post-workout, your body needs protein and some carbs to recover. A protein shake with a fruit, or a meal with chicken/paneer and rice/sweet potato is ideal. Try to eat within 1-2 hours after training.";
+        if (lowerQ.includes('post-workout') || lowerQ.includes('after gym')) {
+            return "Post-workout, have a protein source (shake/chicken/eggs) within 45 mins to maximize recovery.";
         }
         if (lowerQ.includes('muscle')) {
-            return "Building muscle requires consistent resistance training and a slight calorie surplus. Focus on compound movements like squats, pushups, and deadlifts. Don't forget recovery—muscles grow while you sleep, not while you train!";
+            return "Building muscle requires specific resistance training, protein surplus, and sleep. Consistency is key!";
         }
         if (lowerQ.includes('cardio')) {
-            return "Cardio is vital for heart health. For fat loss, Zone 2 cardio (where you can still talk while running/walking) is great. For endurance, try HIIT (High-Intensity Interval Training). Aim for at least 150 minutes of moderate activity per week.";
+            return "Cardio improves heart health and burns calories. 150 mins/week is a good target.";
         }
         if (lowerQ.includes('bmi')) {
-            return "BMI (Body Mass Index) helps categorize weight. A healthy range is 18.5 - 24.9. However, it doesn't measure body fat percentage, so muscular people might show as 'overweight' despite being fit. Check your waist-to-height ratio for more accuracy.";
+            return "BMI is a rough indicator. " + (userProfile?.weight ? `At ${userProfile.weight}kg, your focus should be on body composition (muscle vs fat) rather than just the scale.` : "Check your weight-to-height ratio.");
         }
         if (lowerQ.includes('diet') || lowerQ.includes('food')) {
-            return "A healthy diet is 80% whole foods. Focus on 'eating the rainbow' (variety of veg), adequate protein, and healthy fats. In Kerala, try to balance parboiled rice with more fish, pulses, and leafy greens while reducing fried snacks.";
-        }
-        if (lowerQ.includes('hemoglobin') || lowerQ.includes('blood')) {
-            return "Normal hemoglobin levels are 12-16 g/dL. Low levels cause fatigue during workouts. Boost it with iron-rich foods like spinach, beetroot, pomegranate, and red meat. Always take Vitamin C (like lemon) with iron for better absorption.";
-        }
-        if (lowerQ.includes('sugar') || lowerQ.includes('glucose')) {
-            return "To manage blood sugar, focus on complex carbs (brown rice, oats) instead of simple carbs (white sugar, maida). Fiber slows down sugar absorption. Regular walking after meals significantly helps sensitive insulin levels.";
-        }
-        if (lowerQ.includes('weight') || lowerQ.includes('fat')) {
-            return "Fat loss happens when you are in a calorie deficit (burning more than you eat). Avoid 'crash diets'. Instead, focus on high-protein, high-fiber intake and consistent movement to keep your metabolism high.";
-        }
-        if (lowerQ.includes('sleep') || lowerQ.includes('rest')) {
-            return "Sleep is the most underrated fitness tool. Most recovery and muscle growth happen during deep sleep. Aim for 7-9 hours of quality rest per night for optimal hormones and performance.";
+            if (allergies) return `Given your allergies to ${allergies}, ensure you check food labels. Focus on whole, unprocessed foods.`;
+            return "A balanced diet with protein, good fats, and fiber is essential. Avoid processed foods.";
         }
 
-        return "That's a valid health query. Generally, focusing on whole foods, 7-8 hours of sleep, and 30 minutes of daily movement will solve 90% of health issues. Consult a professional for specific clinic advice!";
+        // Default Logic for other keywords
+        if (lowerQ.includes('hemoglobin')) return "Iron-rich foods (spinach, dates, red meat) help boost hemoglobin. Vitamin C helps absorption.";
+        if (lowerQ.includes('sugar')) return "Minimize added sugars. Natural sugars in whole fruits are generally okay in moderation.";
+        if (lowerQ.includes('weight')) return "Weight management is about Calorie In vs Calorie Out, quality of food, and hormonal balance.";
+        if (lowerQ.includes('sleep')) return "7-9 hours of sleep is non-negotiable for recovery and mental health.";
+
+        return "That's a good question. Based on general fitness guidelines, consistency in diet and exercise is 90% of the game. How is your sleep lately?";
     };
 
     const handleSend = (e) => {

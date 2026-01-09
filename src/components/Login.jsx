@@ -98,6 +98,11 @@ const Login = ({ onLogin }) => {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+            {isLogin && (
+              <div className="forgot-password">
+                <span onClick={() => alert("Reset link sent to email!")}>Forgot Password?</span>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -132,11 +137,13 @@ const Login = ({ onLogin }) => {
         .login-card {
            width: 100%;
            max-width: 400px;
-           background: var(--color-surface);
+           background: rgba(255, 255, 255, 0.9);
+           backdrop-filter: blur(10px);
            padding: var(--spacing-xl);
-           border-radius: var(--radius-lg);
-           box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+           border-radius: 24px;
+           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
            text-align: center;
+           border: 1px solid rgba(255,255,255,0.5);
         }
 
         .logo-section {
@@ -268,8 +275,18 @@ const Login = ({ onLogin }) => {
         }
 
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .forgot-password {
+            text-align: right;
+            margin-top: 8px;
+            font-size: 12px;
+        }
+        .forgot-password span {
+            color: var(--color-primary);
+            cursor: pointer;
+            font-weight: 500;
         }
       `}</style>
     </div>

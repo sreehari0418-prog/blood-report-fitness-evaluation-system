@@ -77,10 +77,7 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
           <p>Welcome back,</p>
           <h3>{userName || 'User'}</h3>
         </div>
-        <button className="notif-btn">
-          <Activity size={20} />
-          <span className="badge"></span>
-        </button>
+        {/* Notification icon removed */}
       </header>
 
       <div className="stats-preview">
