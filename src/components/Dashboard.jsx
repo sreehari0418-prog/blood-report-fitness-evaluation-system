@@ -1,19 +1,22 @@
 import React, { useState } from 'react';
-import { Activity, Calculator, FileText, Utensils, MessageSquare } from 'lucide-react';
-import ProfileMenu from './ProfileMenu';
+import { Activity, Calculator, FileText, Utensils, MessageSquare, Dumbbell, TrendingUp } from 'lucide-react';
+import ProfileDashboard from './Profile/ProfileDashboard';
 
 const Dashboard = ({ userName, onNavigate, onLogout }) => {
-  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showProfileDashboard, setShowProfileDashboard] = useState(false);
+
+  // If profile is open, render it full screen
+  if (showProfileDashboard) {
+    return (
+      <ProfileDashboard
+        user={{ name: userName, email: 'user@example.com' }} // Simulated user data passing for now
+        onClose={() => setShowProfileDashboard(false)}
+        onLogout={onLogout}
+      />
+    );
+  }
 
   const options = [
-    {
-      id: 'bmi',
-      title: 'BMI Calculator',
-      desc: 'Check your health risk & vitals',
-      icon: <Calculator size={24} />,
-      color: 'var(--color-primary)',
-      bg: '#FFF0F1'
-    },
     {
       id: 'blood',
       title: 'Blood Evaluation',
@@ -21,6 +24,14 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
       icon: <FileText size={24} />,
       color: '#4361EE',
       bg: '#F0F4FF'
+    },
+    {
+      id: 'bmi',
+      title: 'BMI Calculator',
+      desc: 'Check your health risk & vitals',
+      icon: <Calculator size={24} />,
+      color: 'var(--color-primary)',
+      bg: '#FFF0F1'
     },
     {
       id: 'fitness',
@@ -34,7 +45,7 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
       id: 'homeworkout',
       title: 'Home Workout',
       desc: '8 Basic exercises & calories',
-      icon: <Activity size={24} />,
+      icon: <Dumbbell size={24} />,
       color: '#FF6B6B',
       bg: '#FFF0F1'
     },
@@ -45,21 +56,21 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
       icon: <MessageSquare size={24} />,
       color: '#7209B7',
       bg: '#F3E8FF'
+    },
+    {
+      id: 'weightprogress', // Linking to the new route
+      title: 'Weight Tracker',
+      desc: 'Track your weight changes',
+      icon: <TrendingUp size={24} />,
+      color: '#8D99AE',
+      bg: '#F1F5F9'
     }
   ];
 
   return (
     <div className="dashboard-container fade-in">
-      {showProfileMenu && (
-        <ProfileMenu
-          onClose={() => setShowProfileMenu(false)}
-          onNavigate={onNavigate}
-          onLogout={onLogout}
-        />
-      )}
-
       <header className="dash-header">
-        <div className="avatar" onClick={() => setShowProfileMenu(true)} style={{ cursor: 'pointer' }}>
+        <div className="avatar" onClick={() => setShowProfileDashboard(true)} style={{ cursor: 'pointer' }}>
           {userName ? userName.charAt(0).toUpperCase() : 'U'}
         </div>
         <div className="welcome-text">

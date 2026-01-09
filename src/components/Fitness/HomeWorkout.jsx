@@ -119,17 +119,42 @@ const HomeWorkout = ({ onBack }) => {
                         </div>
 
                         {/* ANIMATION AREA */}
-                        <div className={`animation-stage anim-${selectedWorkout.name.split(' ')[0] || 'default'}`}>
-                            <div className="stick-figure">
-                                <div className="head"></div>
-                                <div className="body"></div>
-                                <div className="arms"></div>
-                                <div className="legs">
-                                    <div className="leg-l"></div>
-                                    <div className="leg-r"></div>
+                        {/* YOUTUBE EMBED AREA */}
+                        {(() => {
+                            const VIDEO_IDS = {
+                                'Jumping Jacks': 'UpH7rm0cYbM',
+                                'Squats': 'MBMqCNGHwBg',
+                                'Push-ups': 'qJ21hS7L694',
+                                'Burpees': 'auBLPYO8F_g',
+                                'High Knees': 'QPfOZ0e3xkg',
+                                'Lunges': 'S0QJd1mJ34s',
+                                'Plank': '3oK-V0X7X8c',
+                                'Mountain Climbers': 'nmwgirgXLYM'
+                            };
+                            const videoId = VIDEO_IDS[selectedWorkout.name] || 'UpH7rm0cYbM';
+
+                            return (
+                                <div style={{
+                                    width: '100%',
+                                    height: '220px',
+                                    marginBottom: '20px',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    background: '#000'
+                                }}>
+                                    <iframe
+                                        width="100%"
+                                        height="100%"
+                                        src={`https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&modestbranding=1`}
+                                        title="Workout Demonstration"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        style={{ display: 'block' }}
+                                    ></iframe>
                                 </div>
-                            </div>
-                        </div>
+                            );
+                        })()}
 
                         <div className="modal-body">
                             <h4><Info size={16} /> How to do it:</h4>
@@ -235,211 +260,6 @@ const HomeWorkout = ({ onBack }) => {
                     padding-top: 10px;
                     border-top: 1px solid #f1f5f9;
                 }
-                .duration {
-                    font-size: 12px;
-                    color: var(--color-text-muted);
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                    font-weight: 500;
-                }
-                .start-btn {
-                    background: transparent;
-                    color: var(--color-primary);
-                    font-size: 12px;
-                    font-weight: 600;
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                }
-
-                /* MODAL */
-                .modal-overlay {
-                    position: fixed;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(0,0,0,0.6);
-                    z-index: 1000;
-                    display: flex;
-                    align-items: flex-end; /* Bottom sheet on mobile */
-                    justify-content: center;
-                }
-                @media (min-width: 500px) {
-                    .modal-overlay { align-items: center; }
-                    .modal-content { max-width: 400px; border-radius: var(--radius-lg); }
-                }
-
-                .modal-content {
-                    background: white;
-                    width: 100%;
-                    max-height: 90vh;
-                    overflow-y: auto;
-                    border-radius: 20px 20px 0 0;
-                    padding: 20px;
-                    position: relative;
-                    animation: slideUp 0.3s ease-out;
-                }
-                @keyframes slideUp {
-                    from { transform: translateY(100%); }
-                    to { transform: translateY(0); }
-                }
-
-                .close-btn {
-                    position: absolute;
-                    top: 15px;
-                    right: 15px;
-                    background: #f1f5f9;
-                    border-radius: 50%;
-                    width: 32px; height: 32px;
-                    display: flex; align-items: center; justify-content: center;
-                    color: #64748b;
-                }
-
-                .modal-header { margin-bottom: 15px; padding-right: 40px; }
-                .modal-header h3 { font-size: 20px; color: var(--color-text-main); margin-bottom: 5px; }
-                .cal-pill { 
-                    font-size: 12px; background: #ffe4e6; color: #be123c; 
-                    padding: 4px 10px; border-radius: 99px; font-weight: bold; 
-                }
-
-                .video-placeholder {
-                    width: 100%;
-                    height: 180px;
-                    background: #1e293b;
-                    border-radius: var(--radius-md);
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    color: rgba(255,255,255,0.7);
-                    font-size: 12px;
-                    margin-bottom: 20px;
-                }
-                .play-circle { margin-bottom: 10px; opacity: 0.8; }
-
-                .modal-body h4 { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 10px; }
-                .steps-list { list-style: none; padding: 0; }
-                .steps-list li {
-                    display: flex; gap: 10px;
-                    font-size: 14px; color: var(--color-text-secondary);
-                    margin-bottom: 12px;
-                    line-height: 1.4;
-                }
-                .step-num {
-                    background: #eef2ff; color: var(--color-primary);
-                    font-weight: bold; font-size: 12px;
-                    width: 20px; height: 20px;
-                    border-radius: 50%;
-                    display: flex; align-items: center; justify-content: center;
-                    flex-shrink: 0;
-                }
-
-                .modal-footer-stats {
-                    margin-top: 20px;
-                    padding-top: 15px;
-                    border-top: 1px solid #e2e8f0;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                }
-                .m-stat { display: flex; flex-direction: column; font-size: 12px; color: #64748b; }
-                .m-stat strong { font-size: 16px; color: var(--color-text-main); }
-                
-                /* ANIMATION CONTAINER */
-                .animation-stage {
-                    width: 100%;
-                    height: 180px;
-                    background: #f0fdf4;
-                    border-radius: var(--radius-md);
-                    margin-bottom: 20px;
-                    position: relative;
-                    overflow: hidden;
-                    display: flex;
-                    justify-content: center;
-                    align-items: center;
-                    border: 2px solid #bbf7d0;
-                }
-                
-                /* Character Elements */
-                .stick-figure {
-                    position: relative;
-                    width: 40px;
-                    height: 100px;
-                }
-                .head {
-                    width: 20px; height: 20px; background: #15803d; border-radius: 50%;
-                    position: absolute; top: 0; left: 10px;
-                }
-                .body {
-                    width: 4px; height: 40px; background: #15803d;
-                    position: absolute; top: 20px; left: 18px;
-                }
-                .arms {
-                    width: 40px; height: 4px; background: #15803d;
-                    position: absolute; top: 30px; left: 0;
-                }
-                .legs {
-                    width: 40px; height: 40px;
-                    position: absolute; top: 60px; left: 0;
-                }
-                .leg-l, .leg-r {
-                    width: 4px; height: 40px; background: #15803d;
-                    position: absolute; top: 0;
-                }
-                .leg-l { left: 10px; transform: rotate(-10deg); }
-                .leg-r { right: 10px; transform: rotate(10deg); }
-
-
-                /* Workout Specific Animations */
-                
-                /* Squats: Simple Up/Down */
-                .anim-Squats .stick-figure {
-                    animation: squat 1.5s infinite ease-in-out;
-                }
-                @keyframes squat {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(30px) scaleY(0.8); }
-                }
-
-                /* Jump Jacks: Arms/Legs spread */
-                .anim-Jumping .arms, .anim-Jumping .legs {
-                    animation: jack 1s infinite steps(2);
-                }
-                @keyframes jack {
-                    0% { transform: scaleX(1); }
-                    50% { transform: scaleX(1.5); }
-                }
-
-                /* Pushups: Rotate and translate */
-                .anim-Push-ups .stick-figure {
-                    transform: rotate(90deg);
-                    animation: pushup 1.5s infinite ease-in-out;
-                }
-                @keyframes pushup {
-                    0%, 100% { transform: rotate(90deg) translateX(0); }
-                    50% { transform: rotate(90deg) translateX(20px); }
-                }
-
-                /* Burpees */
-                .anim-Burpees .stick-figure {
-                    animation: burpee 2s infinite;
-                }
-                @keyframes burpee {
-                    0% { transform: translateY(0); }
-                    25% { transform: translateY(40px) rotate(90deg); /* Down */ }
-                    50% { transform: translateY(40px) rotate(90deg); /* Pushup */ }
-                    75% { transform: translateY(0); /* Jump */ }
-                    100% { transform: translateY(0); }
-                }
-
-                /* Default Bounce */
-                .anim-default .stick-figure {
-                    animation: bounce 1s infinite;
-                }
-                @keyframes bounce {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-10px); }
-                }
-
                 .start-now-btn {
                     background: var(--color-primary);
                     color: white;

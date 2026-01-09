@@ -97,6 +97,47 @@ const BloodEvaluation = ({ onBack }) => {
         }
     };
 
+    // --- AI DISEASE PREDICTION LOGIC ---
+    const generateDiseasePredictions = (extractedValues) => {
+        const predictions = [];
+
+        Object.keys(extractedValues).forEach(key => {
+            const val = parseFloat(extractedValues[key]);
+            const range = MEDICAL_RANGES[key];
+            if (!range || isNaN(val)) return;
+
+            // Anemia / Hgb
+            if (key === 'hemoglobin') {
+                if (val < 10) predictions.push({ condition: 'Severe Anemia Risk', risk: 'High', color: '#ef4444', advice: 'Consult a specialist immediately for iron supplements.' });
+                else if (val < range.min) predictions.push({ condition: 'Mild Anemia', risk: 'Medium', color: '#fbbf24', advice: 'Increase intake of spinach, red meat, and Vitamin C.' });
+            }
+
+            // Diabetes / Sugar
+            if (key === 'glucose_fasting' || key === 'glucose_pp') {
+                if (val > 140 && key === 'glucose_fasting') predictions.push({ condition: 'Diabetes Risk', risk: 'High', color: '#ef4444', advice: 'Strict sugar control needed. Monitor Hba1c.' });
+                else if (val > range.max) predictions.push({ condition: 'Pre-Diabetes Warning', risk: 'Medium', color: '#fbbf24', advice: 'Reduce carbs/sugar and start daily brisk walking.' });
+            }
+
+            // Kidney / Creatinine
+            if (key === 'creatinine') {
+                if (val > 1.5) predictions.push({ condition: 'Kidney Stress', risk: 'High', color: '#ef4444', advice: 'High hydration needed. Avoid protein supplements temporarily.' });
+            }
+
+            // Infection / WBC
+            if (key === 'total_count' && val > 12000) {
+                predictions.push({ condition: 'Potential Infection', risk: 'Medium', color: '#fbbf24', advice: 'Body is fighting inflammation. Rest well.' });
+            }
+
+            // Cholesterol
+            if ((key === 'cholesterol' && val > 240) || (key === 'triglycerides' && val > 200)) {
+                predictions.push({ condition: 'Cardiovascular Risk', risk: 'High', color: '#ef4444', advice: 'Avoid saturated fats/fried food. Increase cardio.' });
+            }
+        });
+
+        return predictions;
+    };
+
+
     // --- OCR LOGIC ---
     const processImage = async (file) => {
         setIsLoading(true);
@@ -190,9 +231,13 @@ const BloodEvaluation = ({ onBack }) => {
                 return;
             }
 
+            // ** Run Disease Prediction Engine **
+            const predictedRisks = generateDiseasePredictions(extractedValues);
+
             analyzeReport({
                 date: new Date().toLocaleDateString(),
-                values: extractedValues
+                values: extractedValues,
+                risks: predictedRisks // Pass to analyzeReport
             });
 
         } catch (err) {
@@ -304,7 +349,10 @@ const BloodEvaluation = ({ onBack }) => {
             });
         });
 
-        const fullAnalysis = { ...data, results, suggestions };
+        // Add Risks if any (from OCR or Manual)
+        const risks = data.risks || []; // Passed from processImage or server
+
+        const fullAnalysis = { ...data, results, suggestions, risks }; // Store risks
         setAnalyzedData(fullAnalysis);
 
         // Save to history
@@ -347,6 +395,13 @@ const BloodEvaluation = ({ onBack }) => {
             {!analyzedData ? (
                 <div className="main-content">
                     {/* Manual Entry Section */}
+                    {/* ... (Existing Manual Entry - Omitted for brevity of replacement chunk if large, but here I keep structure) ... */}
+                    {/* Actually, user instruction says "Update analyzeReport" and "render Risk Analysis". 
+                        I should target the render part carefully or replacing the whole return is easier given the context of previous read.
+                        Let's focus on the RESULTS part of the return. I have to replace everything from `const analyzeReport` down to the end of return basically to be safe or use multiple chunks.
+                        This chunk replaces analyzeReport and handleManualCheck. I will add another chunk for the JSX render.
+                    */}
+
                     <div className="card manual-card">
                         <h3>Quick Check</h3>
                         <p className="sub-label">Enter a single value to check results instantly.</p>
@@ -462,6 +517,25 @@ const BloodEvaluation = ({ onBack }) => {
                         <button className="text-btn" onClick={() => setAnalyzedData(null)}>Close</button>
                     </div>
 
+                    {/* AI DISEASE RISK SECTION (NEW) */}
+                    {analyzedData.risks && analyzedData.risks.length > 0 && (
+                        <div className="risk-container fade-up">
+                            <h4>⚠️ AI Health Risk Detection</h4>
+                            <div className="risk-grid">
+                                {analyzedData.risks.map((risk, idx) => (
+                                    <div key={idx} className="risk-card" style={{ borderLeft: `4px solid ${risk.color}` }}>
+                                        <div className="risk-header">
+                                            <span className="condition-title">{risk.condition}</span>
+                                            <span className="risk-badge" style={{ background: risk.color }}>{risk.risk}</span>
+                                        </div>
+                                        <p className="risk-advice">{risk.advice}</p>
+                                        <button className="view-details" onClick={() => alert(`Detailed explanation for ${risk.condition}: \n\nThis condition was flagged based on your values. Please consult a doctor for verification.`)}>View Details</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Only show parameters that were actually found (simulated) */}
                     <div className="params-list">
                         {analyzedData.results.map((res, idx) => (
@@ -505,6 +579,20 @@ const BloodEvaluation = ({ onBack }) => {
         .blood-container {
            padding: var(--spacing-md);
         }
+        /* ... Existing Styles ... */
+        /* Risk Styles */
+        .risk-container {
+            background: #fffafa; border: 1px solid #fee2e2; padding: 15px; border-radius: 12px; margin-bottom: 20px;
+        }
+        .risk-container h4 { color: #b91c1c; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .risk-grid { display: flex; flex-direction: column; gap: 10px; }
+        .risk-card { background: white; padding: 12px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .risk-header { display: flex; justify-content: space-between; margin-bottom: 5px; align-items: center; }
+        .condition-title { font-weight: 700; color: #1f2937; }
+        .risk-badge { font-size: 10px; color: white; padding: 2px 8px; border-radius: 99px; font-weight: 700; text-transform: uppercase; }
+        .risk-advice { font-size: 13px; color: #4b5563; margin: 0; line-height: 1.4; }
+        .view-details { margin-top: 8px; font-size: 11px; background: white; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 4px; cursor: pointer; }
+        
         .header-row {
            display: flex;
            align-items: center;
