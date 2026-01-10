@@ -10,7 +10,7 @@ const Login = ({ onLogin }) => {
 
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -26,33 +26,37 @@ const Login = ({ onLogin }) => {
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const users = JSON.parse(localStorage.getItem('bloodfit_users') || '{}');
+    try {
+      const { api } = await import('../utils/api.js');
 
       if (isLogin) {
         // --- LOGIN LOGIC ---
-        if (users[email] && users[email].password === password) {
-          // Success
-          onLogin({ email, name: email.split('@')[0] });
+        const response = await api.login(email, password);
+
+        if (response.success) {
+          localStorage.setItem('auth_token', response.token);
+          onLogin({ email: response.user.email, name: email.split('@')[0] });
         } else {
-          // Failure
-          setError('Invalid email or password. Please try again.');
+          setError(response.error || 'Login failed');
           setIsLoading(false);
         }
       } else {
         // --- SIGNUP LOGIC ---
-        if (users[email]) {
-          setError('User with this email already exists. Please login.');
-          setIsLoading(false);
+        const response = await api.register(email, password);
+
+        if (response.success) {
+          localStorage.setItem('auth_token', response.token);
+          onLogin({ email: response.user.email, name: email.split('@')[0] });
         } else {
-          // Create new user
-          users[email] = { password }; // In a real app, hash this!
-          localStorage.setItem('bloodfit_users', JSON.stringify(users));
-          // Auto-login
-          onLogin({ email, name: email.split('@')[0] });
+          setError(response.error || 'Registration failed');
+          setIsLoading(false);
         }
       }
-    }, 1000);
+    } catch (error) {
+      console.error('Authentication error:', error);
+      setError('Could not connect to server. Please try again later.');
+      setIsLoading(false);
+    }
   };
 
   return (
