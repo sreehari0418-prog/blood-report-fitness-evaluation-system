@@ -17,9 +17,13 @@ numpy
 scikit-learn
 
 # API & Utils
-flask
-flask-cors
+Flask==3.0.0
+Flask-CORS==4.0.0
 python-dotenv
 tqdm
 requests
-gunicorn
+gunicorn==21.2.0
+
+# Authentication
+PyJWT==2.8.0
+bcrypt==4.1.2

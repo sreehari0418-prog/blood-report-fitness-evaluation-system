@@ -1,26 +1,14 @@
 services:
-  # 1. Python Backend (Web Service)
+  # Unified Backend (Authentication + ML Analysis)
   - type: web
-    name: blood-report-backend
+    name: blood-fit-backend
     env: python
-    region: singapore # Closest to India
+    region: singapore
     buildCommand: cd python-backend && pip install -r requirements.txt
-    startCommand: cd python-backend && gunicorn server:app --bind 0.0.0.0:$PORT
+    startCommand: cd python-backend && gunicorn unified_api:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0
-    autoDeploy: true
-
-  # 2. React Frontend (Static Site)
-  - type: static
-    name: blood-report-frontend
-    env: static
-    buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
-    envVars:
-      - key: VITE_API_URL
-        fromService:
-          type: web
-          name: blood-report-backend
-          property: url
+      - key: JWT_SECRET_KEY
+        generateValue: true
     autoDeploy: true

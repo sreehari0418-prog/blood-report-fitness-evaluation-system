@@ -4,3 +4,11 @@ android
 ios
 .DS_Store
 *.log
+
+# Python
+__pycache__
+*.pyc
+*.db
+python-backend/uploads
+.env
+.env.local
