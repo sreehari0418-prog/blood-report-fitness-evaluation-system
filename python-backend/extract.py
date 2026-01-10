@@ -1,10 +1,9 @@
-import torch
-from transformers import LayoutLMv3Processor, LayoutLMv3ForTokenClassification
-from PIL import Image, ImageDraw
-import pytesseract
-import numpy as np
+import os
 import sys
 import json
+from PIL import Image
+import pytesseract
+import numpy as np
 
 # Configuration
 MODEL_PATH = "layoutlmv3-medical-finetuned" # Path to trained model
@@ -39,12 +38,17 @@ def extract_data(image_path):
         boxes.append(normalize_box([x, y, x + w, y + h], width, height))
 
     # 3. Load Model & Processor
-    # In real usage, ensure model is trained and path exists
     try:
+        import torch
+        from transformers import LayoutLMv3Processor, LayoutLMv3ForTokenClassification
+        
         processor = LayoutLMv3Processor.from_pretrained("microsoft/layoutlmv3-base", apply_ocr=False)
         model = LayoutLMv3ForTokenClassification.from_pretrained(MODEL_PATH)
-    except:
-        print("⚠️ Trained model not found. Using base model for demo (Predictions will be random).")
+    except Exception as e:
+        print(f"⚠️ Error loading primary model: {e}. Falling back to base model.")
+        from transformers import LayoutLMv3Processor, LayoutLMv3ForTokenClassification
+        import torch
+        
         processor = LayoutLMv3Processor.from_pretrained("microsoft/layoutlmv3-base", apply_ocr=False)
         model = LayoutLMv3ForTokenClassification.from_pretrained("microsoft/layoutlmv3-base")
 

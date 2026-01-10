@@ -6,7 +6,7 @@ import os
 import werkzeug
 from datetime import datetime, timedelta
 from database import init_db, get_db_connection
-from extract import extract_data
+# from extract import extract_data (Moved inside route for lazy loading)
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend
@@ -239,6 +239,7 @@ def update_profile():
 @app.route('/analyze', methods=['POST'])
 def analyze_report():
     """Analyze blood report using ML model"""
+    from extract import extract_data
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     
