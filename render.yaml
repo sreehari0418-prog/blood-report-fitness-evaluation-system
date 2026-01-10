@@ -1,11 +1,11 @@
 services:
   # Unified Backend (Authentication + ML Analysis)
   - type: web
-    name: blood-fit-backend
+    name: blood-report-fitness-evaluation-system
     env: python
     region: singapore
     buildCommand: cd python-backend && pip install -r requirements.txt
-    startCommand: cd python-backend && gunicorn unified_api:app --bind 0.0.0.0:$PORT
+    startCommand: cd python-backend && gunicorn --workers 1 --timeout 120 unified_api:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0

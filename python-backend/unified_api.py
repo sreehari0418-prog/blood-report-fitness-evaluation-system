@@ -22,6 +22,14 @@ if not os.path.exists(UPLOAD_DIR):
 # Initialize database on startup
 init_db()
 
+@app.route('/', methods=['GET'])
+def index():
+    """Root endpoint for quick connection test"""
+    return jsonify({
+        'status': 'ok',
+        'message': 'Blood & Fit API is online and ready'
+    }), 200
+
 # ============================================================================
 # HEALTH CHECK ENDPOINTS
 # ============================================================================
