@@ -11,9 +11,11 @@ import AIChat from './components/Chat/AIChat'
 import Toast from './components/Toast'
 
 function App() {
-    const [currentPage, setCurrentPage] = useState('login');
-    const [user, setUser] = useState(null);
-    const [userData, setUserData] = useState(null) // Should retrieve from local storage on load
+    // Check for existing session immediately to avoid flash of login screen
+    const savedUser = localStorage.getItem('user_profile');
+    const [currentPage, setCurrentPage] = useState(savedUser ? 'dashboard' : 'login');
+    const [user, setUser] = useState(null); // Auth object
+    const [userData, setUserData] = useState(savedUser ? JSON.parse(savedUser) : null);
 
     // Notification State
     const [toastMsg, setToastMsg] = useState(null);

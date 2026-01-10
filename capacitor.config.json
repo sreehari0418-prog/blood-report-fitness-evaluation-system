@@ -1,0 +1,6 @@
+{
+    "appId": "com.bloodfit.app",
+    "appName": "Blood Report Fitness Evaluator",
+    "webDir": "dist",
+    "bundledWebRuntime": false
+}

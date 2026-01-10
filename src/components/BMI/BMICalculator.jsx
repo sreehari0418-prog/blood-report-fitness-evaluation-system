@@ -1,278 +1,417 @@
-import React, { useEffect, useState } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, Info, Activity, RefreshCw } from 'lucide-react';
 
 const BMICalculator = ({ userProfile, onBack }) => {
-    const [bmi, setBmi] = useState(0);
-    const [category, setCategory] = useState('');
-    const [healthyRange, setHealthyRange] = useState('');
-    const [riskPercentage, setRiskPercentage] = useState(0);
-    const [needleRotation, setNeedleRotation] = useState(-90);
+    // State for Advanced Inputs
+    const [unitSystem, setUnitSystem] = useState('metric'); // 'metric' or 'imperial'
+    const [height, setHeight] = useState(''); // cm or ft
+    const [heightInches, setHeightInches] = useState(''); // for imperial (ft/in)
+    const [weight, setWeight] = useState(''); // kg or lbs
+    const [age, setAge] = useState('');
+    const [gender, setGender] = useState('male');
+    const [activityLevel, setActivityLevel] = useState('sedentary');
 
+    // Results State
+    const [bmi, setBmi] = useState(null);
+    const [category, setCategory] = useState('');
+    const [idealWeight, setIdealWeight] = useState('');
+    const [healthStatus, setHealthStatus] = useState('');
+
+    // Auto-fill from profile on load
     useEffect(() => {
         if (userProfile) {
-            calculateMetrics();
+            if (userProfile.height) setHeight(userProfile.height);
+            if (userProfile.weight) setWeight(userProfile.weight);
+            if (userProfile.age) setAge(userProfile.age);
+            if (userProfile.gender) setGender(userProfile.gender.toLowerCase());
         }
     }, [userProfile]);
 
-    const calculateMetrics = () => {
-        const { weight, heightCm } = userProfile;
-        if (!weight || !heightCm) return;
+    const calculateBMI = () => {
+        let heightM = 0;
+        let weightKg = 0;
 
-        // BMI Formula: weight (kg) / (height (m))^2
-        const heightM = heightCm / 100;
-        const bmiValue = parseFloat((weight / (heightM * heightM)).toFixed(1));
+        // Convert to Metric
+        if (unitSystem === 'metric') {
+            if (!height || !weight) return;
+            heightM = parseFloat(height) / 100;
+            weightKg = parseFloat(weight);
+        } else {
+            // Imperial
+            if (!height || !weight) return; // 'height' acts as feet here
+            const totalInches = (parseFloat(height) * 12) + (parseFloat(heightInches) || 0);
+            heightM = totalInches * 0.0254;
+            weightKg = parseFloat(weight) * 0.453592;
+        }
+
+        if (heightM <= 0 || weightKg <= 0) return;
+
+        // BMI Calculation
+        const bmiValue = parseFloat((weightKg / (heightM * heightM)).toFixed(1));
         setBmi(bmiValue);
 
-        // Categories & Risk
+        // Category & Health Logic
         let cat = '';
-        let risk = 0; // 0 to 100 for speedometer
-        let rot = -90; // -90 (left) to 90 (right)
+        let color = '';
+        let status = '';
 
         if (bmiValue < 18.5) {
             cat = 'Underweight';
-            risk = 20;
-            rot = -60;
-        } else if (bmiValue < 25) {
+            color = 'var(--color-accent)';
+            status = 'You may need to increase your calorie intake. Focus on nutrient-dense foods.';
+        } else if (bmiValue < 24.9) {
             cat = 'Normal Weight';
-            risk = 0; // Ideal
-            rot = 0; // Center (Green)
-        } else if (bmiValue < 30) {
+            color = 'var(--color-success)';
+            status = 'Great job! You have a healthy body weight. Maintain it with balanced diet and exercise.';
+        } else if (bmiValue < 29.9) {
             cat = 'Overweight';
-            risk = 40;
-            rot = 45;
+            color = 'var(--color-warning)';
+            status = 'Try to incorporate more cardio and monitor portion sizes to reach a healthier range.';
         } else {
             cat = 'Obese';
-            risk = 80;
-            rot = 80;
+            color = 'var(--color-danger)';
+            status = 'It is recommended to consult a healthcare provider for a personalized weight management plan.';
         }
-        setCategory(cat);
-        setRiskPercentage(risk);
+        setCategory({ label: cat, color });
+        setHealthStatus(status);
 
-        // Smooth transition for needle
-        // Map BMI roughly to angle: 
-        // 15 -> -90deg, 18.5 -> -30deg, 22 -> 0deg, 25 -> 30deg, 30 -> 60deg, 40 -> 90deg
-        // Simplified mapping
-        let angle = -90;
-        if (bmiValue < 18.5) angle = -45;
-        else if (bmiValue >= 18.5 && bmiValue < 25) angle = 0;
-        else if (bmiValue >= 25 && bmiValue < 30) angle = 45;
-        else angle = 75;
+        // Ideal Body Weight (Robinson Formula)
+        // Men: 52 kg + 1.9 kg per inch over 5 feet
+        // Women: 49 kg + 1.7 kg per inch over 5 feet
+        const heightInInches = heightM / 0.0254;
+        const inchesOver5ft = heightInInches - 60;
 
-        // More dynamic angle
-        const minBMI = 15;
-        const maxBMI = 40;
-        const clampedBMI = Math.max(minBMI, Math.min(bmiValue, maxBMI));
-        const range = maxBMI - minBMI;
-        const fraction = (clampedBMI - minBMI) / range; // 0 to 1
-        const dynamicAngle = (fraction * 180) - 90;
+        let ideal = 0;
+        if (gender === 'male') {
+            ideal = 52 + (1.9 * Math.max(0, inchesOver5ft));
+        } else {
+            ideal = 49 + (1.7 * Math.max(0, inchesOver5ft));
+        }
 
-        setNeedleRotation(dynamicAngle);
+        setIdealWeight(`${ideal.toFixed(1)} - ${(ideal * 1.1).toFixed(1)} kg`);
+    };
 
-        // Healthy Range
-        const minWeight = (18.5 * heightM * heightM).toFixed(1);
-        const maxWeight = (24.9 * heightM * heightM).toFixed(1);
-        setHealthyRange(`${minWeight}kg - ${maxWeight}kg`);
+    const resetForm = () => {
+        setBmi(null);
+        setHeight('');
+        setWeight('');
+        setAge('');
     };
 
     return (
-        <div className="bmi-container fade-in">
-            <div className="header-row">
-                <button onClick={onBack} className="back-btn">
-                    <ChevronLeft size={24} />
-                </button>
-                <h2>BMI Calculator</h2>
+        <div className="advanced-bmi-container fade-in">
+            <div className="bmi-header">
+                <button onClick={onBack} className="btn-icon"><ChevronLeft size={24} /></button>
+                <h2>Advanced BMI Calculator</h2>
+                <div style={{ width: 24 }}></div> {/* Spacer */}
             </div>
 
-            <div className="card result-card">
-                <div className="speedometer-wrapper">
-                    <div className="speedometer">
-                        {/* SVG Gauge */}
-                        <svg viewBox="0 0 200 110" className="gauge-svg">
-                            <path d="M 20 100 A 80 80 0 0 1 73 26" fill="none" stroke="#FFD93D" strokeWidth="15" /> {/* Underweight - Yellow */}
-                            <path d="M 73 26 A 80 80 0 0 1 127 26" fill="none" stroke="#6BCB77" strokeWidth="15" /> {/* Normal - Green */}
-                            <path d="M 127 26 A 80 80 0 0 1 180 100" fill="none" stroke="#FF6B6B" strokeWidth="15" /> {/* Overweight - Red */}
+            <div className="calculator-grid">
+                {/* Input Section */}
+                <div className="card input-card">
+                    <div className="toggle-row">
+                        <button
+                            className={`toggle-btn ${unitSystem === 'metric' ? 'active' : ''}`}
+                            onClick={() => setUnitSystem('metric')}
+                        >Metric (cm/kg)</button>
+                        <button
+                            className={`toggle-btn ${unitSystem === 'imperial' ? 'active' : ''}`}
+                            onClick={() => setUnitSystem('imperial')}
+                        >Imperial (ft/lbs)</button>
+                    </div>
 
-                            {/* Needle */}
-                            <line
-                                x1="100" y1="100"
-                                x2="100" y2="30"
-                                stroke="#333"
-                                strokeWidth="4"
-                                strokeLinecap="round"
-                                transform={`rotate(${needleRotation} 100 100)`}
-                                className="needle"
-                            />
-                            <circle cx="100" cy="100" r="5" fill="#333" />
-                        </svg>
-                        <div className="bmi-value">
-                            <h1>{bmi}</h1>
-                            <p>{category}</p>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Gender</label>
+                            <select value={gender} onChange={(e) => setGender(e.target.value)}>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                            </select>
                         </div>
+                        <div className="form-group">
+                            <label>Age (years)</label>
+                            <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="25" />
+                        </div>
+                    </div>
+
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>{unitSystem === 'metric' ? 'Height (cm)' : 'Height (ft)'}</label>
+                            <input type="number" value={height} onChange={(e) => setHeight(e.target.value)} placeholder={unitSystem === 'metric' ? "175" : "5"} />
+                        </div>
+                        {unitSystem === 'imperial' && (
+                            <div className="form-group">
+                                <label>Inches</label>
+                                <input type="number" value={heightInches} onChange={(e) => setHeightInches(e.target.value)} placeholder="10" />
+                            </div>
+                        )}
+                        <div className="form-group">
+                            <label>{unitSystem === 'metric' ? 'Weight (kg)' : 'Weight (lbs)'}</label>
+                            <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder={unitSystem === 'metric' ? "70" : "150"} />
+                        </div>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Activity Level</label>
+                        <select value={activityLevel} onChange={(e) => setActivityLevel(e.target.value)}>
+                            <option value="sedentary">Sedentary (Little or no exercise)</option>
+                            <option value="light">Lightly active (1-3 days/week)</option>
+                            <option value="moderate">Moderately active (3-5 days/week)</option>
+                            <option value="active">Very active (6-7 days/week)</option>
+                        </select>
+                    </div>
+
+                    <div className="action-row">
+                        <button className="reset-btn" onClick={resetForm}><RefreshCw size={18} /></button>
+                        <button className="calculate-btn" onClick={calculateBMI}>Calculate BMI</button>
                     </div>
                 </div>
 
-                <div className="risk-indicator" style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', marginTop: '20px' }}>
-                    <p style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Health Risk Assessment</p>
-                    <p style={{ fontSize: '18px', fontWeight: 'bold' }}>
-                        <span className={bmi >= 25 || bmi < 18.5 ? 'text-danger' : 'text-success'}>
-                            {bmi >= 30 ? 'High Risk 🚨' : (bmi >= 25 ? 'Moderate Risk ⚠️' : (bmi < 18.5 ? 'Moderate Risk ⚠️' : 'Low Risk ✅'))}
-                        </span>
-                    </p>
-                </div>
-            </div>
+                {/* Result Section */}
+                {bmi && (
+                    <div className="card result-card fade-in">
+                        <div className="result-header">
+                            <h3>Your Result</h3>
+                            <div className="bmi-badge" style={{ backgroundColor: category.color }}>
+                                {category.label}
+                            </div>
+                        </div>
 
-            <div className="stats-grid">
-                <div className="stat-box">
-                    <h4>Healthy Weight Range</h4>
-                    <p>{healthyRange}</p>
-                </div>
-                <div className="stat-box">
-                    <h4>Weight for Age</h4>
-                    <p className="highlight">65th Percentile</p>
-                    <span className="sub-text">(Estimated)</span>
-                </div>
-                <div className="stat-box">
-                    <h4>Height for Age</h4>
-                    <p className="highlight">70th Percentile</p>
-                    <span className="sub-text">(Estimated)</span>
-                </div>
-            </div>
+                        <div className="bmi-display">
+                            <span className="bmi-number" style={{ color: category.color }}>{bmi}</span>
+                            <span className="bmi-label">BMI Score</span>
+                        </div>
 
-            {/* Manual Validation Section */}
-            <div className="card manual-bmi-card">
-                <h3>Validate a BMI Value</h3>
-                <p className="sub-text">Enter a BMI number to check its category.</p>
-                <div className="manual-input-row">
-                    <input
-                        type="number"
-                        placeholder="e.g. 24.5"
-                        className="input-field"
-                        onChange={(e) => {
-                            const val = parseFloat(e.target.value);
-                            if (val > 0) {
-                                // Re-using logic roughly for quick check
-                                // In a real refactor, we'd pull logic out. 
-                                // For now, simple check:
-                                let cat = '';
-                                if (val < 18.5) cat = 'Underweight 🔵';
-                                else if (val < 25) cat = 'Normal ✅';
-                                else if (val < 30) cat = 'Overweight ⚠️';
-                                else cat = 'Obese 🚨';
+                        <div className="progress-bar-container">
+                            <div className="progress-track"></div>
+                            <div
+                                className="progress-fill"
+                                style={{
+                                    width: `${Math.min(Math.max((bmi / 40) * 100, 0), 100)}%`,
+                                    backgroundColor: category.color
+                                }}
+                            ></div>
+                            <div className="markers">
+                                <span style={{ left: '46%' }}>18.5</span>
+                                <span style={{ left: '62.5%' }}>25</span>
+                                <span style={{ left: '75%' }}>30</span>
+                            </div>
+                        </div>
 
-                                // Update UI just for this section? 
-                                // Or maybe just show it inline.
-                                e.target.nextElementSibling.innerText = cat;
-                                e.target.nextElementSibling.style.display = 'block';
-                            } else {
-                                e.target.nextElementSibling.style.display = 'none';
-                            }
-                        }}
-                    />
-                    <div className="manual-result-badge" style={{ display: 'none' }}></div>
-                </div>
+                        <div className="health-insight">
+                            <div className="insight-item">
+                                <Activity size={20} className="icon" />
+                                <div>
+                                    <h4>Ideal Weight</h4>
+                                    <p>{idealWeight}</p>
+                                </div>
+                            </div>
+                            <div className="insight-item">
+                                <Info size={20} className="icon" />
+                                <div>
+                                    <h4>Health Tip</h4>
+                                    <p>{healthStatus}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <style>{`
-        .bmi-container {
-           padding: var(--spacing-md);
-        }
-        .header-row {
-           display: flex;
-           align-items: center;
-           gap: var(--spacing-md);
-           margin-bottom: var(--spacing-md);
-        }
-        .back-btn {
-           background: transparent;
-           color: var(--color-text-main);
-           padding: 0;
-        }
-        .result-card {
-           background: white;
-           padding: var(--spacing-xl);
-           text-align: center;
-           margin-bottom: var(--spacing-lg);
-        }
-        .speedometer-wrapper {
-           position: relative;
-           width: 220px;
-           margin: 0 auto;
-        }
-        .gauge-svg {
-           display: block;
-           width: 100%;
-        }
-        .needle {
-           transition: transform 1s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        .bmi-value {
-           position: absolute;
-           bottom: 0;
-           left: 0;
-           right: 0;
-           text-align: center;
-           transform: translateY(20px);
-        }
-        .bmi-value h1 {
-           font-size: 3rem;
-           color: var(--color-text-main);
-        }
-        .risk-indicator {
-           margin-top: 40px;
-           font-weight: 600;
-        }
-        .text-danger { color: var(--color-danger); }
-        .text-success { color: var(--color-success); }
+                .advanced-bmi-container {
+                    padding: 20px;
+                    max-width: 600px;
+                    margin: 0 auto;
+                }
+                .bmi-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 25px;
+                }
+                .btn-icon { background: none; color: var(--color-text-main); padding: 0; }
+                
+                .toggle-row {
+                    display: flex;
+                    background: #f1f5f9;
+                    border-radius: 12px;
+                    padding: 4px;
+                    margin-bottom: 20px;
+                }
+                .toggle-btn {
+                    flex: 1;
+                    padding: 10px;
+                    border-radius: 8px;
+                    background: transparent;
+                    color: #64748b;
+                    font-weight: 600;
+                    font-size: 14px;
+                    transition: all 0.2s;
+                }
+                .toggle-btn.active {
+                    background: white;
+                    color: var(--color-primary);
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
 
-        .stats-grid {
-           display: grid;
-           grid-template-columns: 1fr;
-           gap: var(--spacing-md);
-        }
-        .stat-box {
-           background: white;
-           padding: var(--spacing-md);
-           border-radius: var(--radius-md);
-           box-shadow: var(--shadow-sm);
-        }
-        .stat-box h4 {
-           font-size: var(--font-size-sm);
-           color: var(--color-text-secondary);
-           margin-bottom: 5px;
-        }
-        .stat-box p {
-           font-size: var(--font-size-lg);
-           font-weight: bold;
-           color: var(--color-text-main);
-        }
-        .sub-text {
-           font-size: 10px;
-           color: #999;
-        }
+                .form-row {
+                    display: flex;
+                    gap: 15px;
+                    margin-bottom: 15px;
+                }
+                .form-group { flex: 1; }
+                .form-group label {
+                    display: block;
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #475569;
+                    margin-bottom: 6px;
+                }
+                .form-group input, .form-group select {
+                    width: 100%;
+                    padding: 12px;
+                    border: 1px solid #e2e8f0;
+                    border-radius: 10px;
+                    font-size: 16px;
+                    background: #fff;
+                    transition: border-color 0.2s;
+                }
+                .form-group input:focus, .form-group select:focus {
+                    outline: none;
+                    border-color: var(--color-primary);
+                }
 
-        .manual-bmi-card {
-            margin-top: 20px;
-            background: #f8fafc;
-            border: 1px dashed #cbd5e1;
-        }
-        .manual-bmi-card h3 { font-size: 16px; margin-bottom: 5px; }
-        .manual-input-row { 
-            display: flex; 
-            align-items: center; 
-            gap: 15px; 
-            margin-top: 15px; 
-        }
-        .manual-input-row .input-field { width: 100px; padding: 8px; }
-        .manual-result-badge {
-            font-weight: bold;
-            font-size: 14px;
-            padding: 5px 10px;
-            background: white;
-            border-radius: 99px;
-            border: 1px solid #e2e8f0;
-            box-shadow: var(--shadow-sm);
-        }
-      `}</style>
+                .action-row {
+                    display: flex;
+                    gap: 10px;
+                    margin-top: 25px;
+                }
+                .reset-btn {
+                    width: 48px;
+                    background: #f1f5f9;
+                    color: #64748b;
+                    border-radius: 12px;
+                    display: flex; align-items: center; justify-content: center;
+                }
+                .calculate-btn {
+                    flex: 1;
+                    background: var(--color-primary);
+                    color: white;
+                    padding: 14px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    box-shadow: 0 4px 12px rgba(230, 57, 70, 0.25);
+                }
+                .calculate-btn:active { transform: scale(0.98); }
+
+                /* Result Card Styles */
+                .result-card {
+                    margin-top: 25px;
+                    border: 1px solid #e2e8f0;
+                }
+                .result-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    border-bottom: 1px solid #f1f5f9;
+                    padding-bottom: 15px;
+                    margin-bottom: 20px;
+                }
+                .bmi-badge {
+                    padding: 6px 12px;
+                    border-radius: 99px;
+                    color: white;
+                    font-size: 12px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                }
+                
+                .bmi-display {
+                    text-align: center;
+                    margin-bottom: 25px;
+                }
+                .bmi-number {
+                    display: block;
+                    font-size: 4rem;
+                    font-weight: 800;
+                    line-height: 1;
+                }
+                .bmi-label {
+                    color: #94a3b8;
+                    font-size: 14px;
+                    font-weight: 500;
+                }
+
+                .progress-bar-container {
+                    position: relative;
+                    height: 12px;
+                    background: #f1f5f9;
+                    border-radius: 99px;
+                    margin-bottom: 30px;
+                }
+                .progress-fill {
+                    height: 100%;
+                    border-radius: 99px;
+                    transition: width 1s ease-out;
+                }
+                .markers {
+                    position: absolute;
+                    top: 15px;
+                    left: 0;
+                    width: 100%;
+                    height: 20px;
+                }
+                .markers span {
+                    position: absolute;
+                    transform: translateX(-50%);
+                    font-size: 10px;
+                    color: #94a3b8;
+                    font-weight: 600;
+                }
+                .markers span::before {
+                    content: '';
+                    position: absolute;
+                    top: -15px;
+                    left: 50%;
+                    width: 2px;
+                    height: 12px;
+                    background: white;
+                    transform: translateX(-50%);
+                }
+
+                .health-insight {
+                    background: #f8fafc;
+                    border-radius: 12px;
+                    padding: 15px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 15px;
+                }
+                .insight-item {
+                    display: flex;
+                    gap: 15px;
+                    align-items: flex-start;
+                }
+                .insight-item .icon {
+                    color: var(--color-primary);
+                    margin-top: 2px;
+                }
+                .insight-item h4 {
+                    font-size: 14px;
+                    margin-bottom: 4px;
+                    color: var(--color-text-main);
+                }
+                .insight-item p {
+                    font-size: 13px;
+                    color: #64748b;
+                    line-height: 1.4;
+                }
+
+                .fade-in { animation: fadeIn 0.4s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            `}</style>
         </div>
     );
 };
