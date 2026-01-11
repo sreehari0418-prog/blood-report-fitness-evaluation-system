@@ -1,63 +1,104 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
 import bcrypt
 import jwt
 import os
 import werkzeug
 from datetime import datetime, timedelta
-from database import init_db, get_db_connection
-# from extract import extract_data (Moved inside route for lazy loading)
 
+# Initialize Flask App
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend
+CORS(app)
 
-# Secret key for JWT (use environment variable in production)
+# Configuration
 SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')
-
-# Upload directory for blood reports
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-# Initialize database on startup
-init_db()
+# Database Configuration
+# Use SQLite locally, but allow overriding with DATABASE_URL for PostgreSQL on Render/Neon
+db_path = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'bloodfit.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{db_path}')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+db = SQLAlchemy(app)
+
+# ============================================================================
+# DATABASE MODELS
+# ============================================================================
+
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    profile = db.relationship('Profile', backref='user', uselist=False)
+
+class Profile(db.Model):
+    __tablename__ = 'profiles'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100))
+    age = db.Column(db.Integer)
+    gender = db.Column(db.String(20))
+    height = db.Column(db.Integer)
+    heightCm = db.Column(db.Integer)
+    weight = db.Column(db.Float)
+    blood_group = db.Column(db.String(10))
+    diseases = db.Column(db.Text)
+    allergies = db.Column(db.Text)
+    notes = db.Column(db.Text)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'name': self.name,
+            'age': self.age,
+            'gender': self.gender,
+            'height': self.height,
+            'heightCm': self.heightCm,
+            'weight': self.weight,
+            'bloodGroup': self.blood_group, # Map back to frontend expectation
+            'diseases': self.diseases,
+            'allergies': self.allergies,
+            'notes': self.notes,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+
+# Create Tables
+with app.app_context():
+    db.create_all()
 
 @app.route('/', methods=['GET'])
 def index():
-    """Root endpoint for quick connection test"""
     return jsonify({
         'status': 'ok',
-        'message': 'Blood & Fit API is online and ready'
+        'message': 'Blood & Fit API is online (SQLAlchemy Mode)'
     }), 200
 
 # ============================================================================
-# HEALTH CHECK ENDPOINTS
+# HEALTH CHECK
 # ============================================================================
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint for both services"""
     return jsonify({
         'status': 'ok', 
         'message': 'Blood & Fit API is running',
-        'services': {
-            'authentication': 'active',
-            'ml_analysis': 'active'
-        }
+        'database': 'connected'
     }), 200
 
-@app.route('/api/health', methods=['GET'])
-def api_health_check():
-    """Alternative health check endpoint"""
-    return jsonify({'status': 'ok', 'message': 'Auth API is running'}), 200
-
 # ============================================================================
-# AUTHENTICATION ENDPOINTS
+# AUTHENTICATION
 # ============================================================================
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    """Register a new user"""
     try:
         data = request.json
         email = data.get('email')
@@ -65,90 +106,64 @@ def register():
         
         if not email or not password:
             return jsonify({'error': 'Email and password are required'}), 400
+        
+        # Check if user exists
+        if User.query.filter_by(email=email).first():
+            return jsonify({'error': 'Email already exists'}), 409
         
         # Hash password
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        hashed_pw = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
-        # Insert into database
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        # Create user
+        new_user = User(email=email, password_hash=hashed_pw)
+        db.session.add(new_user)
+        db.session.commit()
         
-        try:
-            cursor.execute(
-                'INSERT INTO users (email, password_hash, created_at) VALUES (?, ?, ?)',
-                (email, password_hash.decode('utf-8'), datetime.utcnow().isoformat())
-            )
-            user_id = cursor.lastrowid
-            
-            # Create default profile
-            cursor.execute(
-                'INSERT INTO profiles (user_id, name, updated_at) VALUES (?, ?, ?)',
-                (user_id, email.split('@')[0], datetime.utcnow().isoformat())
-            )
-            
-            conn.commit()
-            
-            # Generate JWT token
-            token = jwt.encode({
-                'user_id': user_id,
-                'email': email,
-                'exp': datetime.utcnow() + timedelta(days=7)
-            }, SECRET_KEY, algorithm='HS256')
-            
-            return jsonify({
-                'success': True,
-                'token': token,
-                'user': {'email': email, 'id': user_id}
-            }), 201
-            
-        except Exception as e:
-            conn.rollback()
-            if 'UNIQUE constraint failed' in str(e):
-                return jsonify({'error': 'Email already exists'}), 409
-            raise
-        finally:
-            conn.close()
-            
-    except Exception as e:
-        print(f"Registration error: {str(e)}")
-        return jsonify({'error': 'Registration failed'}), 500
-
-@app.route('/api/login', methods=['POST'])
-def login():
-    """Login user"""
-    try:
-        data = request.json
-        email = data.get('email')
-        password = data.get('password')
+        # Create default profile
+        new_profile = Profile(user_id=new_user.id, name=email.split('@')[0])
+        db.session.add(new_profile)
+        db.session.commit()
         
-        if not email or not password:
-            return jsonify({'error': 'Email and password are required'}), 400
-        
-        # Get user from database
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE email = ?', (email,))
-        user = cursor.fetchone()
-        conn.close()
-        
-        if not user:
-            return jsonify({'error': 'Invalid email or password'}), 401
-        
-        # Check password
-        if not bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
-            return jsonify({'error': 'Invalid email or password'}), 401
-        
-        # Generate JWT token
+        # Generate Token
         token = jwt.encode({
-            'user_id': user['id'],
-            'email': user['email'],
+            'user_id': new_user.id,
+            'email': new_user.email,
             'exp': datetime.utcnow() + timedelta(days=7)
         }, SECRET_KEY, algorithm='HS256')
         
         return jsonify({
             'success': True,
             'token': token,
-            'user': {'email': user['email'], 'id': user['id']}
+            'user': {'email': email, 'id': new_user.id}
+        }), 201
+            
+    except Exception as e:
+        db.session.rollback()
+        print(f"Registration error: {str(e)}")
+        return jsonify({'error': 'Registration failed'}), 500
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if not user or not bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        token = jwt.encode({
+            'user_id': user.id,
+            'email': user.email,
+            'exp': datetime.utcnow() + timedelta(days=7)
+        }, SECRET_KEY, algorithm='HS256')
+        
+        return jsonify({
+            'success': True,
+            'token': token,
+            'user': {'email': user.email, 'id': user.id}
         }), 200
         
     except Exception as e:
@@ -157,96 +172,79 @@ def login():
 
 @app.route('/api/profile', methods=['GET'])
 def get_profile():
-    """Get user profile"""
     try:
-        # Get token from header
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
             return jsonify({'error': 'No token provided'}), 401
         
         token = auth_header.split(' ')[1]
-        
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
             user_id = payload['user_id']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token expired'}), 401
         except jwt.InvalidTokenError:
             return jsonify({'error': 'Invalid token'}), 401
         
-        # Get profile from database
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM profiles WHERE user_id = ?', (user_id,))
-        profile = cursor.fetchone()
-        conn.close()
+        profile = Profile.query.filter_by(user_id=user_id).first()
         
         if not profile:
             return jsonify({'error': 'Profile not found'}), 404
         
         return jsonify({
             'success': True,
-            'profile': dict(profile)
+            'profile': profile.to_dict()
         }), 200
         
     except Exception as e:
-        print(f"Profile fetch error: {str(e)}")
+        print(f"Profile error: {str(e)}")
         return jsonify({'error': 'Failed to fetch profile'}), 500
 
 @app.route('/api/profile', methods=['PUT'])
 def update_profile():
-    """Update user profile"""
     try:
-        # Get token from header
         auth_header = request.headers.get('Authorization')
         if not auth_header or not auth_header.startswith('Bearer '):
             return jsonify({'error': 'No token provided'}), 401
         
         token = auth_header.split(' ')[1]
-        
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
             user_id = payload['user_id']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'error': 'Token expired'}), 401
         except jwt.InvalidTokenError:
             return jsonify({'error': 'Invalid token'}), 401
-        
+            
         data = request.json
+        profile = Profile.query.filter_by(user_id=user_id).first()
         
-        # Update profile in database
-        conn = get_db_connection()
-        cursor = conn.cursor()
+        if not profile:
+            return jsonify({'error': 'Profile not found'}), 404
+            
+        # Update fields
+        profile.name = data.get('name', profile.name)
+        profile.age = data.get('age', profile.age)
+        profile.gender = data.get('gender', profile.gender)
+        profile.height = data.get('height', profile.height)
+        profile.heightCm = data.get('heightCm', profile.heightCm)
+        profile.weight = data.get('weight', profile.weight)
+        profile.blood_group = data.get('bloodGroup', profile.blood_group)
+        profile.diseases = data.get('diseases', profile.diseases)
+        profile.allergies = data.get('allergies', profile.allergies)
+        profile.notes = data.get('notes', profile.notes)
+        profile.updated_at = datetime.utcnow()
         
-        cursor.execute('''
-            UPDATE profiles SET 
-                name = ?, age = ?, gender = ?, height = ?, heightCm = ?,
-                weight = ?, blood_group = ?, diseases = ?, allergies = ?,
-                notes = ?, updated_at = ?
-            WHERE user_id = ?
-        ''', (
-            data.get('name'), data.get('age'), data.get('gender'),
-            data.get('height'), data.get('heightCm'), data.get('weight'),
-            data.get('bloodGroup'), data.get('diseases'), data.get('allergies'),
-            data.get('notes'), datetime.utcnow().isoformat(), user_id
-        ))
-        
-        conn.commit()
-        conn.close()
-        
+        db.session.commit()
         return jsonify({'success': True, 'message': 'Profile updated'}), 200
         
     except Exception as e:
-        print(f"Profile update error: {str(e)}")
+        db.session.rollback()
+        print(f"Update error: {str(e)}")
         return jsonify({'error': 'Failed to update profile'}), 500
 
 # ============================================================================
-# ML ANALYSIS ENDPOINTS
+# ML ANALYSIS
 # ============================================================================
 
 @app.route('/analyze', methods=['POST'])
 def analyze_report():
-    """Analyze blood report using ML model"""
     from extract import extract_data
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -261,33 +259,12 @@ def analyze_report():
         file.save(filepath)
         
         try:
-            # Run Inference using our extract.py logic
             print(f"🧠 Processing {filename} with ML Model...")
             results = extract_data(filepath)
             
-            # Format results for Frontend
-            # Expected Frontend format: { values: { 'hemoglobin': 14.2, ... } }
-            formatted_values = {}
-            
-            for item in results:
-                # Basic heuristic mapping (Improve this based on your model labels)
-                # Assuming model outputs e.g. "B-TEST_NAME" for "Hemoglobin" and "B-VALUE" for "14.0"
-                # This part depends heavily on the model's extraction logic.
-                # For now, we return the raw extraction list to let frontend decide or simple mapping
-                
-                # Mock mapping for demo until model is trained:
-                label = item['label']
-                text = item['word']
-                
-                # Real logic would pair Key-Value based on position
-                # Here we just pass raw list back for now
-                pass
-
             return jsonify({
                 "message": "Analysis Complete",
                 "raw_results": results, 
-                # In real scenario, we'd map this to the exact keys expected by Frontend
-                # For now, frontend will likely fallback or display raw data
                 "ml_enabled": True
             })
 
@@ -295,12 +272,7 @@ def analyze_report():
             print(f"❌ Error: {e}")
             return jsonify({"error": str(e)}), 500
 
-# ============================================================================
-# APP ENTRYPOINT
-# ============================================================================
-
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
-    print(f"🚀 Blood & Fit Unified API running on port {port}")
-    print(f"📊 Services: Authentication + ML Analysis")
+    print(f"🚀 Blood & Fit Unified API (SQLAlchemy) running on port {port}")
     app.run(host='0.0.0.0', port=port, debug=True)
