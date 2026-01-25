@@ -57,7 +57,7 @@ export const KEYWORD_MAP = {
     'anion_gap': ['anion gap'],
 
     // 5. Diabetes/Glucose
-    'glucose_fasting': ['glucose fasting', 'fbs', 'fasting blood sugar'],
+    'glucose_fasting': ['glucose fasting', 'fasting glucose', 'fbs', 'fasting blood sugar'],
     'glucose_pp': ['glucose pp', 'ppbs', 'post prandial'],
     'glucose_random': ['random glucose', 'rbs'],
     'hba1c': ['hba1c', 'glycated hemoglobin', 'glycosylated hemoglobin'],
