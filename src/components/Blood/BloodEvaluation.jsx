@@ -64,14 +64,25 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                 const data = imageData.data;
 
-                // Grayscale & Binarization (Thresholding)
-                // This makes text BLACK and background WHITE
+                // Contrast Stretching (Safer than strict binarization)
+                // This keeps gray text readable even if lighting is bad
+                const contrast = 50; // Range: -100 to 100
+                const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
                 for (let i = 0; i < data.length; i += 4) {
+                    // 1. Grayscale
                     const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
-                    const threshold = avg > 140 ? 255 : 0; // High contrast threshold
-                    data[i] = threshold;     // R
-                    data[i + 1] = threshold; // G
-                    data[i + 2] = threshold; // B
+
+                    // 2. Apply Contrast
+                    let newValue = factor * (avg - 128) + 128;
+
+                    // Clamp 0-255
+                    if (newValue < 0) newValue = 0;
+                    if (newValue > 255) newValue = 255;
+
+                    data[i] = newValue;     // R
+                    data[i + 1] = newValue; // G
+                    data[i + 2] = newValue; // B
                 }
 
                 ctx.putImageData(imageData, 0, 0);
