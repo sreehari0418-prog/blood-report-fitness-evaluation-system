@@ -17,6 +17,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
 
     // Advanced Mode State
     const [scanMode, setScanMode] = useState('basic'); // 'basic' | 'advanced'
+    const [enableLens, setEnableLens] = useState(false); // Toggle for Digital Lens
     const [serverStatus, setServerStatus] = useState('checking');
 
     useEffect(() => {
@@ -101,8 +102,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         setStatusText('Applying Digital Lens (Enhancing Quality)...');
 
         try {
-            // 1. Preprocess the image (B&W, Contrast)
-            const processedFile = await preprocessImage(file);
+            // 1. Preprocess the image (B&W, Contrast) - only if enabled
+            const processedFile = enableLens ? await preprocessImage(file) : file;
 
             setStatusText('Scanning Enhanced Image...');
 
@@ -418,6 +419,19 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                                 {serverStatus === 'online' && <span className="dot online" title="Server Online"></span>}
                                 {serverStatus === 'offline' && <span className="dot offline" title="Server Offline (Run server.py)"></span>}
                             </button>
+                        </div>
+
+                        {/* Digital Lens Toggle */}
+                        <div style={{ marginBottom: '15px' }}>
+                            <label className="checkbox-container">
+                                <input
+                                    type="checkbox"
+                                    checked={enableLens}
+                                    onChange={(e) => setEnableLens(e.target.checked)}
+                                />
+                                <span className="checkmark"></span>
+                                Enable Digital Lens (Enhance Image)
+                            </label>
                         </div>
 
                         <label className="btn-secondary upload-btn">
