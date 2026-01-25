@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Upload, FileText, CheckCircle, AlertTriangle, AlertCircle, Search, ScanLine } from 'lucide-react';
 import Tesseract from 'tesseract.js';
-import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport } from '../../utils/bloodAnalysis';
+import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport, KEYWORD_MAP } from '../../utils/bloodAnalysis';
 
 const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [report, setReport] = useState(null);
@@ -70,28 +70,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9.]/g, '');
 
             // Specific Keyword mapping based on uploaded images
-            const KEYWORD_MAP = {
-                'hemoglobin': ['hemoglobin', 'haemoglobin', 'hb', 'hgb'],
-                'total_count': ['total leucocyte count', 'tlc', 'wbc count', 'white blood cells', 'total count'],
-                'neutrophil': ['neutrophils', 'polymorphs', 'neutrophil'],
-                'lymphocyte': ['lymphocytes', 'lymphocyte'],
-                'eosinophil': ['eosinophils', 'eosinophil'],
-                'monocyte': ['monocytes', 'monocyte'],
-                'basophil': ['basophils', 'basophil'],
-                'platelet_count': ['platelet count', 'platelet', 'plt'],
-                'rbc_count': ['rbc count', 'total rbc', 'red blood cells', 'erythrocyte'],
-                'mcv': ['mcv', 'mean corpuscular volume'],
-                'mch': ['mch', 'mean corpuscular hemoglobin'],
-                'mchc': ['mchc', 'mean corpuscular hemoglobin concentration'],
-                'glucose_fasting': ['glucose fasting', 'fbs', 'fasting blood sugar'],
-                'glucose_pp': ['glucose pp', 'ppbs', 'post prandial'],
-                'cholesterol': ['total cholesterol', 'serum cholesterol'],
-                'creatinine': ['serum creatinine', 'creatinine'],
-                'uric_acid': ['serum uric acid', 'uric acid'],
-                'tsh': ['thyroid stimulating hormone', 'tsh', 'thyrotropin'],
-                't3': ['triiodothyronine', 'total t3', 't3'],
-                't4': ['thyroxine', 'total t4', 't4']
-            };
+            // KEYWORD_MAP is imported from utils/bloodAnalysis.js
 
             rows.forEach(row => {
                 const lowerRow = row.toLowerCase().trim();
