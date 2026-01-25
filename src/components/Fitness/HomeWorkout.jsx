@@ -126,7 +126,7 @@ const HomeWorkout = ({ onBack }) => {
                                 'Squats': 'aclHkVaku9U', // How to Squat
                                 'Push-ups': 'IODxDxX7oi4', // How to Push Up
                                 'Burpees': 'auBLPYO8F_g', // Burpees (Retaining if valid, else replacing with 'dZgVxmf6jkA') -> Let's use 'dZgVxmf6jkA' (How to do a Burpee)
-                                'High Knees': '8opcQdC-V-U', // High Knees
+                                'High Knees': 'oDdkytliOqE', // High Knees | Exercise Demo
                                 'Lunges': 'QOVaHwm-Q6U', // Lunges
                                 'Plank': 'pSHjTRCQxIw', // Plank
                                 'Mountain Climbers': 'nmwgirgXLYM' // Keeping original if unsure, but let's replace with 'zT-9L3CEcmk'
@@ -137,7 +137,7 @@ const HomeWorkout = ({ onBack }) => {
                                 'Squats': 'YaXPRqUwItQ',
                                 'Push-ups': 'IODxDxX7oi4',
                                 'Burpees': 'dZgVxmf6jkA',
-                                'High Knees': 'ZZKpjaVk_2A', // How cast
+                                'High Knees': 'oDdkytliOqE',
                                 'Lunges': 'QOVaHwm-Q6U',
                                 'Plank': 'pSHjTRCQxIw',
                                 'Mountain Climbers': 'zT-9L3CEcmk'

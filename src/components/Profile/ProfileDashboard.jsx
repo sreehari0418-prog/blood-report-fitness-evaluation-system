@@ -4,9 +4,9 @@ import { ChevronLeft, User, Activity, FileText, Settings, Heart, Save, Share2 } 
 
 // ... (inside component) ...
 
-const ProfileDashboard = ({ user, onClose, onLogout }) => {
+const ProfileDashboard = ({ user, onClose, onLogout, onNavigate }) => {
     {/* Export button removed */ }
-    const [activeTab, setActiveTab] = useState('details'); // details, health, reports
+    const [activeTab, setActiveTab] = useState('health'); // Default to health
     const [isEditing, setIsEditing] = useState(false);
 
     // Form Data
@@ -33,7 +33,8 @@ const ProfileDashboard = ({ user, onClose, onLogout }) => {
         }
 
         // Load Reports
-        const reports = JSON.parse(localStorage.getItem('blood_reports') || '[]');
+        const reportKey = user.email ? `reports_${user.email}` : 'blood_reports';
+        const reports = JSON.parse(localStorage.getItem(reportKey) || '[]');
         setReportHistory(reports);
     }, [user.email]);
 
@@ -76,41 +77,24 @@ const ProfileDashboard = ({ user, onClose, onLogout }) => {
 
             {/* Tabs */}
             <div className="p-tabs">
-                <button className={`p-tab ${activeTab === 'details' ? 'active' : ''}`} onClick={() => setActiveTab('details')}>Details</button>
-                <button className={`p-tab ${activeTab === 'health' ? 'active' : ''}`} onClick={() => setActiveTab('health')}>Health</button>
+                {/* Details Tab Removed */}
+                <button className={`p-tab ${activeTab === 'health' ? 'active' : ''}`} onClick={() => setActiveTab('health')}>Health Profile</button>
                 <button className={`p-tab ${activeTab === 'reports' ? 'active' : ''}`} onClick={() => setActiveTab('reports')}>Reports</button>
             </div>
 
             <div className="p-content">
-                {activeTab === 'details' && (
+                {activeTab === 'health' && (
                     <div className="tab-pane fade-in">
                         <div className="pane-header">
-                            <h4>Personal Details</h4>
-                            <button className="edit-toggle" onClick={() => setIsEditing(!isEditing)}>
-                                {isEditing ? "Cancel" : "Edit"}
-                            </button>
+                            <h4>Personal & Medical Data</h4>
+                            {!isEditing && <button className="edit-toggle" onClick={() => setIsEditing(true)}>Edit</button>}
                         </div>
 
-                        <div className="form-grid">
+                        {/* Merged Basic Details into Health */}
+                        <div className="form-grid" style={{ marginBottom: '20px' }}>
                             <div className="field">
                                 <label>Age</label>
                                 <input type="number" disabled={!isEditing} value={formData.age} onChange={e => setFormData({ ...formData, age: e.target.value })} />
-                            </div>
-                            <div className="field">
-                                <label>Gender</label>
-                                <select disabled={!isEditing} value={formData.gender} onChange={e => setFormData({ ...formData, gender: e.target.value })}>
-                                    <option>Male</option>
-                                    <option>Female</option>
-                                    <option>Other</option>
-                                </select>
-                            </div>
-                            <div className="field">
-                                <label>Height (cm)</label>
-                                <input type="number" disabled={!isEditing} value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} />
-                            </div>
-                            <div className="field">
-                                <label>Weight (kg)</label>
-                                <input type="number" disabled={!isEditing} value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} />
                             </div>
                             <div className="field">
                                 <label>Blood Group</label>
@@ -122,21 +106,14 @@ const ProfileDashboard = ({ user, onClose, onLogout }) => {
                                     <option>AB+</option><option>AB-</option>
                                 </select>
                             </div>
-                        </div>
-
-                        {isEditing && (
-                            <button className="save-btn" onClick={handleSave}>
-                                <Save size={18} /> Save Changes
-                            </button>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'health' && (
-                    <div className="tab-pane fade-in">
-                        <div className="pane-header">
-                            <h4>Health Profile</h4>
-                            {!isEditing && <button className="edit-toggle" onClick={() => setIsEditing(true)}>Edit</button>}
+                            <div className="field">
+                                <label>Weight (kg)</label>
+                                <input type="number" disabled={!isEditing} value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} />
+                            </div>
+                            <div className="field">
+                                <label>Height (cm)</label>
+                                <input type="number" disabled={!isEditing} value={formData.height} onChange={e => setFormData({ ...formData, height: e.target.value })} />
+                            </div>
                         </div>
 
                         <div className="health-form">
@@ -156,7 +133,7 @@ const ProfileDashboard = ({ user, onClose, onLogout }) => {
                                 onChange={e => setFormData({ ...formData, allergies: e.target.value })}
                             />
 
-                            <label>About Me / Notes</label>
+                            <label>Health Notes</label>
                             <textarea
                                 className="large-text"
                                 disabled={!isEditing}
@@ -172,13 +149,16 @@ const ProfileDashboard = ({ user, onClose, onLogout }) => {
                             </button>
                         )}
 
-                        <div className="milestones-preview">
-                            <h5>Milestones</h5>
-                            <div className="milestone-badges">
-                                <span className="m-badge">🏆 7 Day Streak</span>
-                                <span className="m-badge">💧 Hydrated</span>
+                        {/* Weight Tracker Link */}
+                        <div className="milestones-preview" style={{ marginTop: '20px', cursor: 'pointer' }} onClick={() => onNavigate('weightprogress')}>
+                            <div className="pane-header" style={{ marginBottom: '10px' }}>
+                                <h5>Weight Tracker</h5>
+                                <span style={{ fontSize: '12px', color: 'var(--color-primary)' }}>View Graph →</span>
                             </div>
+                            <p style={{ fontSize: '12px', color: '#64748b' }}>Track your weight journey over time.</p>
                         </div>
+
+                        {/* Milestones Section Removed */}
                     </div>
                 )}
 

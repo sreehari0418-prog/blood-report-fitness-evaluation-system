@@ -22,22 +22,63 @@ const AIChat = ({ onBack, userProfile }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const [reports, setReports] = useState([]);
+
     useEffect(() => {
+        // Load All Relevant User Data
+        if (userProfile?.email) {
+            const savedReports = JSON.parse(localStorage.getItem(`reports_${userProfile.email}`) || '[]');
+            setReports(savedReports);
+        }
         scrollToBottom();
-    }, [messages]);
+    }, [messages, userProfile?.email]);
 
     const getBotResponse = (query) => {
         const lowerQ = query.toLowerCase();
 
+        // 1. Check for Report Analysis Request
+        if (lowerQ.includes('analyze') || lowerQ.includes('summary') || lowerQ.includes('my report')) {
+            if (reports.length === 0) {
+                return "I don't see any blood reports uploaded yet. specific values. You can upload one in the Blood Evaluation section!";
+            }
+            const latest = reports[0]; // Assuming sorted by new
+            const abnormal = latest.results.filter(r => r.status !== 'Normal');
+
+            if (abnormal.length === 0) return "Your latest report looks perfect! All values are within the normal range. Keep it up! 🌟";
+
+            const issues = abnormal.map(a => `${a.parameter} is ${a.status} (${a.value} ${a.unit})`).join(', ');
+            return `Based on your latest report (${latest.date}), here are some things to watch: ${issues}. Would you like diet tips for any of these?`;
+        }
+
+        // 2. Specific Parameter Query (e.g. "is my hemoglobin low?")
+        const paramMatch = TOPICS.find(t => lowerQ.includes(t));
+        if (paramMatch && reports.length > 0) {
+            const latest = reports[0];
+            const found = latest.results.find(r => r.parameter.toLowerCase().includes(paramMatch));
+
+            if (found) {
+                return `Your latest ${found.parameter} is ${found.value} ${found.unit}, which is ${found.status}. ${found.fitnessImpact || ''}`;
+            }
+        }
+
         // Personalization Context
         const diseases = userProfile?.diseases ? userProfile.diseases.toLowerCase() : '';
         const allergies = userProfile?.allergies ? userProfile.allergies.toLowerCase() : '';
+        const age = userProfile?.age || '';
+        const weight = userProfile?.weight || '';
+        const bloodGroup = userProfile?.bloodGroup || '';
+        const gender = userProfile?.gender || '';
 
         // Topic Check
         const isRelevant = TOPICS.some(topic => lowerQ.includes(topic));
 
-        if (!isRelevant) {
-            return "I apologize, but I'm specialized in Health, Blood Reports, Nutrition, and Fitness. Ask me about your protein intake or blood levels! 🏥";
+        if (!isRelevant && !lowerQ.includes('hello') && !lowerQ.includes('hi')) {
+            return `I'm analyzing your health data... I can help with Blood Reports, Diet, and Fitness. Try asking "Analyze my report" or "How is my hemoglobin?".`;
+        }
+
+        // --- Profile Aware Responses ---
+        if (lowerQ.includes('my profile') || lowerQ.includes('my health') || lowerQ.includes('about me')) {
+            return `You are a ${age}-year-old ${gender} with Blood Group ${bloodGroup}. Current weight: ${weight}kg. Known conditions: ${diseases || 'None'}. Allergies: ${allergies || 'None'}.`;
         }
 
         // Disease/Condition Specific Responses

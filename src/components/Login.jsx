@@ -35,7 +35,7 @@ const Login = ({ onLogin }) => {
 
         if (response.success) {
           localStorage.setItem('auth_token', response.token);
-          onLogin({ email: response.user.email, name: email.split('@')[0] });
+          onLogin({ email: response.user.email, name: email.split('@')[0] }, false);
         } else {
           setError(response.error || 'Login failed');
           setIsLoading(false);
@@ -46,7 +46,7 @@ const Login = ({ onLogin }) => {
 
         if (response.success) {
           localStorage.setItem('auth_token', response.token);
-          onLogin({ email: response.user.email, name: email.split('@')[0] });
+          onLogin({ email: response.user.email, name: email.split('@')[0] }, true);
         } else {
           setError(response.error || 'Registration failed');
           setIsLoading(false);

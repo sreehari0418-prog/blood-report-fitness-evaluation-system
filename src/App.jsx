@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import Login from './components/Login'
+import { api } from './utils/api'
 import ProfileSetup from './components/ProfileSetup'
 import Dashboard from './components/Dashboard'
 import BMICalculator from './components/BMI/BMICalculator'
@@ -9,6 +10,7 @@ import HomeWorkout from './components/Fitness/HomeWorkout'
 import WeightProgress from './components/WeightProgress'
 import AIChat from './components/Chat/AIChat'
 import Toast from './components/Toast'
+import SpecializedDiet from './components/Diet/SpecializedDiet'
 
 function App() {
     // Check for existing session immediately to avoid flash of login screen
@@ -45,14 +47,37 @@ function App() {
         return () => clearInterval(interval);
     }, []);
 
-    const handleLogin = (userAuth) => {
+    const handleLogin = async (userAuth, isSignup = false) => {
         setUser(userAuth);
-        // If we have profile skip to dash, else setup
-        if (localStorage.getItem('user_profile')) {
-            setUserData(JSON.parse(localStorage.getItem('user_profile')));
-            setCurrentPage('dashboard');
-        } else {
+
+        if (isSignup) {
+            // New user registration -> Force profile setup
             setCurrentPage('profile_setup');
+            return;
+        }
+
+        try {
+            // Logged in user -> Fetch profile
+            const response = await api.getProfile();
+            if (response.success && response.profile) {
+                console.log("Profile found:", response.profile);
+                setUserData(response.profile);
+                localStorage.setItem('user_profile', JSON.stringify(response.profile));
+                setCurrentPage('dashboard');
+            } else {
+                // Should not happen for login unless DB is empty
+                console.log("No profile found, redirecting to setup");
+                setCurrentPage('profile_setup');
+            }
+        } catch (error) {
+            console.error("Error fetching profile:", error);
+            // Fallback
+            if (localStorage.getItem('user_profile')) {
+                setUserData(JSON.parse(localStorage.getItem('user_profile')));
+                setCurrentPage('dashboard');
+            } else {
+                setCurrentPage('profile_setup');
+            }
         }
     };
 
@@ -82,11 +107,12 @@ function App() {
             {currentPage === 'dashboard' && <Dashboard userName={userData?.name} onNavigate={handleNavigate} onLogout={handleLogout} />}
 
             {currentPage === 'bmi' && <BMICalculator userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
-            {currentPage === 'blood' && <BloodEvaluation onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'blood' && <BloodEvaluation user={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'fitness' && <FitnessHelper userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'homeworkout' && <HomeWorkout onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'weightprogress' && <WeightProgress userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'chat' && <AIChat userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'diet' && <SpecializedDiet user={userData} onBack={() => setCurrentPage('dashboard')} />}
         </div>
     )
 }

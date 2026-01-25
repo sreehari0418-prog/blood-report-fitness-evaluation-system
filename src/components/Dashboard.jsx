@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Activity, Calculator, FileText, Utensils, MessageSquare, Dumbbell, TrendingUp } from 'lucide-react';
+import { Activity, Calculator, FileText, Utensils, MessageSquare, Dumbbell, TrendingUp, Apple } from 'lucide-react';
 import ProfileDashboard from './Profile/ProfileDashboard';
 
 const Dashboard = ({ userName, onNavigate, onLogout }) => {
@@ -12,6 +12,7 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
         user={{ name: userName, email: 'user@example.com' }} // Simulated user data passing for now
         onClose={() => setShowProfileDashboard(false)}
         onLogout={onLogout}
+        onNavigate={onNavigate}
       />
     );
   }
@@ -58,12 +59,12 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
       bg: '#F3E8FF'
     },
     {
-      id: 'weightprogress', // Linking to the new route
-      title: 'Weight Tracker',
-      desc: 'Track your weight changes',
-      icon: <TrendingUp size={24} />,
-      color: '#8D99AE',
-      bg: '#F1F5F9'
+      id: 'diet',
+      title: 'Specialized Diet',
+      desc: 'Meals based on Blood Report',
+      icon: <Apple size={24} />,
+      color: '#10B981',
+      bg: '#ECFDF5'
     }
   ];
 

@@ -3,7 +3,8 @@ import { ChevronLeft, TrendingDown, TrendingUp, Minus, Calendar, Activity } from
 
 const WeightProgress = ({ onBack, userProfile }) => {
     const [weightLog, setWeightLog] = useState(() => {
-        const saved = localStorage.getItem('weight_log');
+        if (!userProfile?.email) return [];
+        const saved = localStorage.getItem(`weight_log_${userProfile.email}`);
         return saved ? JSON.parse(saved) : [];
     });
     const [currentWeight, setCurrentWeight] = useState('');
@@ -19,7 +20,9 @@ const WeightProgress = ({ onBack, userProfile }) => {
 
         const updated = [...weightLog, newEntry];
         setWeightLog(updated);
-        localStorage.setItem('weight_log', JSON.stringify(updated));
+        if (userProfile?.email) {
+            localStorage.setItem(`weight_log_${userProfile.email}`, JSON.stringify(updated));
+        }
         setCurrentWeight('');
     };
 

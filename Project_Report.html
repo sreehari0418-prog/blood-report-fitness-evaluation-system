@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Report - Blood Report & Health Evaluation App</title>
+    <style>
+        :root {
+            --primary: #e63946;
+            /* Medical Red */
+            --secondary: #1d3557;
+            /* Professional Blue/Dark */
+            --bg: #ffffff;
+            --text-main: #333333;
+            --text-light: #666666;
+            --light-red: #fff5f5;
+        }
+
+        @page {
+            size: A4;
+            margin: 20mm;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-main);
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+
+        .report-container {
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            color: var(--primary);
+            font-size: 28px;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-light);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* Sections */
+        h2 {
+            color: var(--secondary);
+            font-size: 18px;
+            border-left: 5px solid var(--primary);
+            padding-left: 10px;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            background: var(--light-red);
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+
+        p {
+            font-size: 14px;
+            text-align: justify;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+            font-size: 14px;
+        }
+
+        ul li {
+            padding-left: 15px;
+            position: relative;
+            margin-bottom: 5px;
+        }
+
+        ul li::before {
+            content: "•";
+            color: var(--primary);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Two Column Layout for Tech */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .tech-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .tech-box h3 {
+            margin-top: 0;
+            font-size: 14px;
+            color: var(--primary);
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        /* Architecture Diagram Placeholder */
+        .diagram {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px dashed var(--primary);
+            background: var(--light-red);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Page Break Utility */
+        .page-break {
+            page-break-before: always;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-light);
+            border-top: 1px solid #eee;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="report-container">
+        <!-- PAGE 1 -->
+        <header>
+            <h1>Blood Report & Health Evaluation App</h1>
+            <div class="subtitle">AI-Powered Personalized Health & Fitness Analysis System</div>
+        </header>
+
+        <h2>1. Abstract</h2>
+        <p>
+            In the modern era of digital health, interpreting complex medical data remains a challenge for the general
+            public.
+            The <strong>Blood Report & Health Evaluation App</strong> is a web-based solution designed to bridge this
+            gap.
+            By leveraging Artificial Intelligence (AI) and Machine Learning (ML), the application automatically extracts
+            data from blood report images,
+            analyzes key health parameters, predicts potential disease risks, and offers personalized fitness and
+            dietary recommendations.
+            This system ensures that users can understand their health status instantly without immediate medical
+            consultation, storing their data securely for long-term tracking.
+        </p>
+
+        <h2>2. Objectives</h2>
+        <ul>
+            <li><strong>Automated Analysis:</strong> Eliminate the need for manual data entry of blood reports.</li>
+            <li><strong>Disease Prediction:</strong> Use ML algorithms to flag risks like Anemia, Diabetes, or Thyroid
+                issues.</li>
+            <li><strong>Personalized Guidance:</strong> Provide dynamic diet and workout plans based on specific blood
+                values.</li>
+            <li><strong>Data Privacy:</strong> Ensure secure, user-isolated storage for sensitive health history.</li>
+        </ul>
+
+        <h2>3. Tools & Technologies</h2>
+        <div class="grid-container">
+            <div class="tech-box">
+                <h3>Frontend (UI/UX)</h3>
+                <ul>
+                    <li><strong>Framework:</strong> React.js (Vite)</li>
+                    <li><strong>Languages:</strong> JavaScript (ES6+), HTML5, CSS3</li>
+                    <li><strong>Styling:</strong> Custom CSS Variables, Lucide-React Icons</li>
+                    <li><strong>Features:</strong> Responsive Design, PWA Capabilities</li>
+                </ul>
+            </div>
+            <div class="tech-box">
+                <h3>Backend & Database</h3>
+                <ul>
+                    <li><strong>Server:</strong> Python (Flask)</li>
+                    <li><strong>Database:</strong> SQLite (Backend), LocalStorage (Client Cache)</li>
+                    <li><strong>API:</strong> RESTful Architecture</li>
+                    <li><strong>Tools:</strong> Tesseract OCR (Image Text Extraction)</li>
+                </ul>
+            </div>
+        </div>
+        <div class="tech-box" style="margin-top: 15px;">
+            <h3>Machine Learning & AI</h3>
+            <p style="margin-bottom: 5px;"><strong>Models Used:</strong></p>
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <span>🔬 <strong>Naïve Bayes:</strong> Probability-based classification for disease risk.</span>
+                <span>🌲 <strong>Random Forest:</strong> Robust decision making for complex health data.</span>
+                <span>📈 <strong>Logistic Regression:</strong> Binary classification (e.g., Diabetic /
+                    Non-Diabetic).</span>
+            </div>
+        </div>
+
+        <h2>4. System Overview</h2>
+        <div class="diagram">
+            <strong>Architecture Flow:</strong><br>
+            User Uploads Image ➝ Frontend (React) ➝ Backend API (Flask) ➝ <br>
+            <strong>Tesseract OCR</strong> (Extracts Text) ➝ <strong>ML Classifier</strong> (Predicts Risk) ➝ <br>
+            Results & Advice JSON ➝ <strong>Dashboard Display</strong>
+        </div>
+
+        <!-- PAGE BREAK -->
+        <div class="page-break"></div>
+
+        <!-- PAGE 2 -->
+        <h2>5. Key Modules</h2>
+        <div class="grid-container">
+            <div>
+                <ul>
+                    <li><strong>Authentication & Profile:</strong> Secure Login/Signup with personalized health profile
+                        setup (Age, Weight, Existing Conditions).</li>
+                    <li><strong>Blood Report Analysis:</strong> Upload image -> OCR processing -> Instant simplified
+                        breakdown of parameters (Hemoglobin, Sugar, etc.).</li>
+                    <li><strong>AI Health Chatbot:</strong> A specialized bot that answers queries like "Is my Iron
+                        low?" based on the user's specific report context.</li>
+                </ul>
+            </div>
+            <div>
+                <ul>
+                    <li><strong>Weight Tracker:</strong> Interactive graph to log and visualize weight progress over
+                        time, isolated per user.</li>
+                    <li><strong>Fitness & Diet Engine:</strong> Dynamic logic that maps 'Low Hemoglobin' to 'Iron-rich
+                        foods' and 'Low Intensity Cardio'.</li>
+                    <li><strong>Home Workouts:</strong> Guided exercise library with video demonstrations.</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>6. Advantages</h2>
+        <ul>
+            <li><strong>Instant Interpretation:</strong> Converts confusing medical jargon into plain English instantly.
+            </li>
+            <li><strong>Holistic Approach:</strong> Combines medical data with fitness actionable (Workouts + Diet).
+            </li>
+            <li><strong>Privacy First:</strong> Data is scoped strictly to the user account; no leakage between
+                profiles.</li>
+            <li><strong>Accessibility:</strong> Web-based platform accessible on any device.</li>
+        </ul>
+
+        <h2>7. Future Enhancements</h2>
+        <ul>
+            <li><strong>Cloud Sync:</strong> Full migration to PostgreSQL for cross-device synchronization (Planned).
+            </li>
+            <li><strong>Doctor Connection:</strong> Feature to share reports directly with verified medical
+                professionals.</li>
+            <li><strong>Wearable Integration:</strong> Auto-sync steps and heart rate from FitBit/Apple Watch.</li>
+            <li><strong>Advanced ML Training:</strong> Fine-tuning LayoutLMv3 on 1000+ custom report samples for 99%
+                accuracy.</li>
+        </ul>
+
+        <div style="margin-top: 50px; text-align: center; color: #999;">
+            <p><em>Submitted as part of Project Demonstration</em></p>
+        </div>
+
+        <footer>
+            &copy; 2026 Blood Report & Health Evaluation System. All Rights Reserved.
+        </footer>
+    </div>
+
+</body>
+
+</html>
