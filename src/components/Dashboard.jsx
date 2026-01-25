@@ -27,6 +27,14 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
       bg: '#F0F4FF'
     },
     {
+      id: 'diet',
+      title: 'Specialized Diet',
+      desc: 'Meals based on Blood Report',
+      icon: <Apple size={24} />,
+      color: '#10B981',
+      bg: '#ECFDF5'
+    },
+    {
       id: 'bmi',
       title: 'BMI Calculator',
       desc: 'Check your health risk & vitals',
@@ -57,14 +65,6 @@ const Dashboard = ({ userName, onNavigate, onLogout }) => {
       icon: <MessageSquare size={24} />,
       color: '#7209B7',
       bg: '#F3E8FF'
-    },
-    {
-      id: 'diet',
-      title: 'Specialized Diet',
-      desc: 'Meals based on Blood Report',
-      icon: <Apple size={24} />,
-      color: '#10B981',
-      bg: '#ECFDF5'
     }
   ];
 
