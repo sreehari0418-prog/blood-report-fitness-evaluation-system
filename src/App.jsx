@@ -106,7 +106,7 @@ function App() {
 
             {currentPage === 'login' && <Login onLogin={handleLogin} />}
             {currentPage === 'profile_setup' && <ProfileSetup onComplete={handleProfileComplete} />}
-            {currentPage === 'dashboard' && <Dashboard userName={userData?.name} onNavigate={handleNavigate} onLogout={handleLogout} />}
+            {currentPage === 'dashboard' && <Dashboard userName={userData?.name} userProfile={userData} onNavigate={handleNavigate} onLogout={handleLogout} />}
 
             {currentPage === 'bmi' && <BMICalculator userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'blood' && <BloodEvaluation user={userData} onBack={() => setCurrentPage('dashboard')} initialViewReport={currentData} />}

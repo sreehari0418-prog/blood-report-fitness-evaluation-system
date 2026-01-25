@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { Activity, Calculator, FileText, Utensils, MessageSquare, Dumbbell, TrendingUp, Apple } from 'lucide-react';
 import ProfileDashboard from './Profile/ProfileDashboard';
 
-const Dashboard = ({ userName, onNavigate, onLogout }) => {
+const Dashboard = ({ userName, userProfile, onNavigate, onLogout }) => {
   const [showProfileDashboard, setShowProfileDashboard] = useState(false);
 
   // If profile is open, render it full screen
   if (showProfileDashboard) {
     return (
       <ProfileDashboard
-        user={{ name: userName, email: 'user@example.com' }} // Simulated user data passing for now
+        user={userProfile || { name: userName, email: 'user@example.com' }}
         onClose={() => setShowProfileDashboard(false)}
         onLogout={onLogout}
         onNavigate={onNavigate}
