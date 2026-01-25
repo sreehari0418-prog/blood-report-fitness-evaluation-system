@@ -12,3 +12,4 @@ __pycache__
 python-backend/uploads
 .env
 .env.local
+python-backend/dataset/images/

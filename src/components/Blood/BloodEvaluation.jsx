@@ -47,15 +47,57 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         }
     };
 
+    // --- IMAGE PREPROCESSING (Digital Lens) ---
+    const preprocessImage = (imageFile) => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.src = URL.createObjectURL(imageFile);
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+
+                // Upscale for better detail
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+
+                // Grayscale & Binarization (Thresholding)
+                // This makes text BLACK and background WHITE
+                for (let i = 0; i < data.length; i += 4) {
+                    const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                    const threshold = avg > 140 ? 255 : 0; // High contrast threshold
+                    data[i] = threshold;     // R
+                    data[i + 1] = threshold; // G
+                    data[i + 2] = threshold; // B
+                }
+
+                ctx.putImageData(imageData, 0, 0);
+
+                // Return processed image as Blob
+                canvas.toBlob((blob) => {
+                    resolve(blob);
+                });
+            };
+        });
+    };
+
     // --- OCR LOGIC ---
     const processImage = async (file) => {
         setIsLoading(true);
-        setStatusText('Starting OCR Engine...');
+        setStatusText('Applying Digital Lens (Enhancing Quality)...');
 
         try {
-            // 1. Recognize text using Tesseract
+            // 1. Preprocess the image (B&W, Contrast)
+            const processedFile = await preprocessImage(file);
+
+            setStatusText('Scanning Enhanced Image...');
+
+            // 2. Recognize text using Tesseract
             const { data: { text } } = await Tesseract.recognize(
-                file,
+                processedFile,
                 'eng',
                 { logger: m => setStatusText(`${m.status} (${Math.round(m.progress * 100)}%)`) }
             );
@@ -82,26 +124,56 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     const foundSynonym = synonyms.find(s => lowerRow.includes(s));
 
                     if (foundSynonym && !extractedValues[paramKey]) {
-                        // Strategy 1: Look for numbers in the same line
-                        // Remove the parameter name to avoid matching numbers in the name (rare but possible)
-                        const remainingText = lowerRow.replace(foundSynonym, '');
+                        // FIX: "Ghost Values" / Extra Values Error
+                        // Problem: The scanner might pick up "12" from "12/05/2023 Hemoglobin" or "1. Hemoglobin"
+                        // Solution: Split the string by the keyword and ONLY look at the text AFTER the keyword (to the right).
 
-                        // Regex to find floating point numbers
-                        const numbers = remainingText.match(/(\d+(\.\d+)?)/g);
+                        const parts = lowerRow.split(foundSynonym);
+                        if (parts.length < 2) return;
 
-                        if (numbers && numbers.length > 0) {
-                            // HEURISTIC: usually the first number is the Result, second is Range or Unit specific
-                            // But sometimes the first number is just a serial number or part of range if formatted badly
-                            // Let's assume the first distinct standalone number is the value.
-                            // We filter out extremely small/large numbers if not reasonable, or check range
+                        const textAfterKeyword = parts.slice(1).join(' ').trim();
 
-                            const val = parseFloat(numbers[0]);
+                        // Regex Improvements:
+                        // 1. Prioritize patterns with decimals: 5.3, 10.5
+                        // 2. Then look for integers
+                        // Match numbers, but exclude those attached to % or similar immediately if needed
+                        const decimalMatch = textAfterKeyword.match(/(\d+\.\d+)/);
+                        const integerMatch = textAfterKeyword.match(/(\d+)/);
 
-                            // Basic Validation: Don't pick up "01" from "01-02-2023" date if mixed
-                            // Check if valid number for this param (simple range check or not NaN)
-                            if (!isNaN(val)) {
-                                extractedValues[paramKey] = val;
+                        let val = null;
+
+                        if (decimalMatch) {
+                            val = parseFloat(decimalMatch[0]);
+                        } else if (integerMatch) {
+                            val = parseFloat(integerMatch[0]);
+                        }
+
+                        if (val !== null && !isNaN(val)) {
+                            // SANITY CHECK: Compare against Medical Range to detect OCR errors (like 53 instead of 5.3)
+                            const range = MEDICAL_RANGES[paramKey];
+                            if (range) {
+                                // If value is way out of range (e.g., > 5x max), it might be a missing decimal
+                                // Heuristic: If we dividing by 10 puts it right in the middle of Normal range, assume missed decimal.
+                                // But be careful not to auto-fix actual high values. Only if it looks like a formatting error.
+
+                                // Specific Fix for common Tesseract "missed dot" error:
+                                if (val > range.max * 5) {
+                                    if ((val / 10) >= range.min && (val / 10) <= range.max) {
+                                        console.log(`Auto-correcting ${paramKey}: ${val} -> ${val / 10}`);
+                                        val = val / 10;
+                                    } else if ((val / 100) >= range.min && (val / 100) <= range.max) {
+                                        // e.g. 5.35 -> 535
+                                        val = val / 100;
+                                    }
+                                }
+
+                                // Ignore if it looks like a Date (e.g. 2023) or completely wild
+                                if (val > 1900 && val < 2100 && paramKey !== 'total_count') {
+                                    return; // Likely a year
+                                }
                             }
+
+                            extractedValues[paramKey] = val;
                         }
                     }
                 });
