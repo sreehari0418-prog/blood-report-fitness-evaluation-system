@@ -145,19 +145,41 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
 
                         const textAfterKeyword = parts.slice(1).join(' ').trim();
 
-                        // Regex Improvements:
-                        // 1. Prioritize patterns with decimals: 5.3, 10.5
-                        // 2. Then look for integers
-                        // Match numbers, but exclude those attached to % or similar immediately if needed
-                        const decimalMatch = textAfterKeyword.match(/(\d+\.\d+)/);
-                        const integerMatch = textAfterKeyword.match(/(\d+)/);
+                        // IMPROVED NUMBER EXTRACTION LOGIC
+                        // Common OCR Patterns:
+                        // ✓ "14.2 g/dL" → 14.2
+                        // ✓ "14 2 g/dl" → 14.2 (space instead of dot!)
+                        // ✓ "142 g/dl" → 14.2 (if way out of range, we'll fix with /10)
+                        // ✗ "Range: 12-16" → IGNORE (This is a range, not a value)
+                        // ✗ "12/05/2023" → IGNORE (Date)
 
                         let val = null;
 
+                        // Step 1: Try normal decimal
+                        const decimalMatch = textAfterKeyword.match(/(\d+\.\d+)/);
                         if (decimalMatch) {
                             val = parseFloat(decimalMatch[0]);
-                        } else if (integerMatch) {
-                            val = parseFloat(integerMatch[0]);
+                        } else {
+                            // Step 2: Try "digit space digit" pattern (OCR error: "14 2" instead of "14.2")
+                            const spacedDecimalMatch = textAfterKeyword.match(/(\d+)\s+(\d{1,2})(?!\d)/);
+                            if (spacedDecimalMatch && !textAfterKeyword.includes('-')) {
+                                // Only accept if not part of a range (no dash nearby)
+                                val = parseFloat(spacedDecimalMatch[1] + '.' + spacedDecimalMatch[2]);
+                                console.log(`Detected spaced decimal: "${spacedDecimalMatch[0]}" → ${val}`);
+                            } else {
+                                // Step 3: Try plain integer (but be careful of ranges)
+                                const integerMatch = textAfterKeyword.match(/(\d+)/);
+                                if (integerMatch) {
+                                    // Check if this number is part of a range pattern like "12-16"
+                                    const rangePattern = new RegExp(integerMatch[0] + '\\s*-\\s*\\d+');
+                                    if (rangePattern.test(textAfterKeyword)) {
+                                        // This is a range value, skip it
+                                        console.log(`Skipping range value: ${integerMatch[0]}`);
+                                        return;
+                                    }
+                                    val = parseFloat(integerMatch[0]);
+                                }
+                            }
                         }
 
                         if (val !== null && !isNaN(val)) {
