@@ -15,15 +15,10 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [manualValue, setManualValue] = useState('');
     const [manualResult, setManualResult] = useState(null);
 
-    // Advanced Mode State
-    const [scanMode, setScanMode] = useState('basic'); // 'basic' | 'advanced'
+    // Image Enhancement Toggle
     const [enableLens, setEnableLens] = useState(false); // Toggle for Digital Lens
-    const [serverStatus, setServerStatus] = useState('checking');
 
     useEffect(() => {
-        // Check if local python server is running
-        checkServer();
-
         const reportKey = (user && user.email) ? `reports_${user.email}` : `temp_reports_${Date.now()}`;
         const saved = localStorage.getItem(reportKey);
         if (saved) {
@@ -37,16 +32,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         }
     }, [user, initialViewReport]);
 
-    const checkServer = async () => {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-        try {
-            const res = await fetch(`${API_URL}/health`);
-            if (res.ok) setServerStatus('online');
-            else setServerStatus('offline');
-        } catch (e) {
-            setServerStatus('offline');
-        }
-    };
+
 
     // --- IMAGE PREPROCESSING (Digital Lens) ---
     const preprocessImage = (imageFile) => {
@@ -424,24 +410,6 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                         </div>
                         <h3>Upload Report Image</h3>
                         <p>Take a clear photo of your report. AI will scan for values.</p>
-
-                        {/* Mode Toggle */}
-                        <div className="scan-mode-toggle">
-                            <button
-                                className={`mode-btn ${scanMode === 'basic' ? 'active' : ''}`}
-                                onClick={() => setScanMode('basic')}
-                            >
-                                Basic (Browser)
-                            </button>
-                            <button
-                                className={`mode-btn ${scanMode === 'advanced' ? 'active' : ''}`}
-                                onClick={() => setScanMode('advanced')}
-                            >
-                                Advanced (Python ML)
-                                {serverStatus === 'online' && <span className="dot online" title="Server Online"></span>}
-                                {serverStatus === 'offline' && <span className="dot offline" title="Server Offline (Run server.py)"></span>}
-                            </button>
-                        </div>
 
                         {/* Digital Lens Toggle */}
                         <div style={{ marginBottom: '15px' }}>
