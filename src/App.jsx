@@ -72,10 +72,21 @@ function App() {
             }
         } catch (error) {
             console.error("Error fetching profile:", error);
-            // Fallback
-            if (localStorage.getItem('user_profile')) {
-                setUserData(JSON.parse(localStorage.getItem('user_profile')));
-                setCurrentPage('dashboard');
+            // Fallback: Only use cached profile if it matches the current user
+            const cachedProfile = localStorage.getItem('user_profile');
+            if (cachedProfile) {
+                const parsed = JSON.parse(cachedProfile);
+                // Check if email matches (or if cache has no email, assume risk or force setup. 
+                // With recent fix, email is present. If missing, it's risky but better to reset).
+
+                if (parsed.email === userAuth.email) {
+                    setUserData(parsed);
+                    setCurrentPage('dashboard');
+                } else {
+                    // Cache mismatch or stale data
+                    console.log("Cached profile does not match current user. Redirecting to setup.");
+                    setCurrentPage('profile_setup');
+                }
             } else {
                 setCurrentPage('profile_setup');
             }
@@ -83,8 +94,10 @@ function App() {
     };
 
     const handleProfileComplete = (data) => {
-        setUserData(data);
-        localStorage.setItem('user_profile', JSON.stringify(data));
+        // Merge with auth user data to ensure email is preserved for unique storage keys
+        const completeData = { ...data, email: user?.email };
+        setUserData(completeData);
+        localStorage.setItem('user_profile', JSON.stringify(completeData));
         setCurrentPage('dashboard');
     };
 
