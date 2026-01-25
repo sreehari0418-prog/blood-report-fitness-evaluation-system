@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Upload, FileText, CheckCircle, AlertTriangle, AlertCircle, Search, ScanLine } from 'lucide-react';
 import Tesseract from 'tesseract.js';
-import { MEDICAL_RANGES, generateDiseasePredictions } from '../../utils/bloodAnalysis';
+import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport } from '../../utils/bloodAnalysis';
 
-const BloodEvaluation = ({ onBack, user }) => {
+const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [report, setReport] = useState(null);
     const [analyzedData, setAnalyzedData] = useState(null);
     const [history, setHistory] = useState([]);
@@ -30,7 +30,11 @@ const BloodEvaluation = ({ onBack, user }) => {
         } else {
             setHistory([]);
         }
-    }, [user]);
+
+        if (initialViewReport) {
+            setAnalyzedData(initialViewReport);
+        }
+    }, [user, initialViewReport]);
 
     const checkServer = async () => {
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -221,49 +225,18 @@ const BloodEvaluation = ({ onBack, user }) => {
     };
 
     const analyzeReport = (data) => {
-        const results = [];
-        const suggestions = [];
+        // Use shared logic to generate full analysis structure
+        const fullAnalysis = analyzeBloodReport(data.values, data.risks);
 
-        Object.keys(data.values).forEach(key => {
-            const val = parseFloat(data.values[key]);
-            const range = MEDICAL_RANGES[key];
-            if (!range) return;
-
-            let status = 'Normal';
-            if (val < range.min) status = 'Low';
-            if (val > range.max) status = 'High';
-
-            const fitnessImpact = status === 'Low' ? range.impact?.low : (status === 'High' ? range.impact?.high : null);
-
-            if (status !== 'Normal') {
-                suggestions.push({
-                    parameter: key,
-                    status: status,
-                    foods: range.foods,
-                    fitnessImpact: fitnessImpact
-                });
-            }
-
-            results.push({
-                parameter: key,
-                value: val,
-                unit: range.unit,
-                range: `${range.min}-${range.max}`,
-                status,
-                fitnessImpact
-            });
-        });
-
-        // Add Risks if any (from OCR or Manual)
-        const risks = data.risks || []; // Passed from processImage or server
-
-        const fullAnalysis = { ...data, results, suggestions, risks }; // Store risks
         setAnalyzedData(fullAnalysis);
 
         // Save to history
-        const newHistory = [fullAnalysis, ...history];
-        setHistory(newHistory);
+        // Load latest history to ensure we don't overwrite with stale state if it changed elsewhere
         const reportKey = (user && user.email) ? `reports_${user.email}` : `temp_reports_${Date.now()}`;
+        const currentHistory = JSON.parse(localStorage.getItem(reportKey) || '[]');
+
+        const newHistory = [fullAnalysis, ...currentHistory];
+        setHistory(newHistory);
         localStorage.setItem(reportKey, JSON.stringify(newHistory));
     };
 

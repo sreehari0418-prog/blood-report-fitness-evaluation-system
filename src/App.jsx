@@ -16,6 +16,7 @@ function App() {
     // Check for existing session immediately to avoid flash of login screen
     const savedUser = localStorage.getItem('user_profile');
     const [currentPage, setCurrentPage] = useState(savedUser ? 'dashboard' : 'login');
+    const [currentData, setCurrentData] = useState(null); // Data passed between pages
     const [user, setUser] = useState(null); // Auth object
     const [userData, setUserData] = useState(savedUser ? JSON.parse(savedUser) : null);
 
@@ -87,7 +88,8 @@ function App() {
         setCurrentPage('dashboard');
     };
 
-    const handleNavigate = (pageId) => {
+    const handleNavigate = (pageId, data = null) => {
+        setCurrentData(data);
         setCurrentPage(pageId);
     };
 
@@ -107,7 +109,7 @@ function App() {
             {currentPage === 'dashboard' && <Dashboard userName={userData?.name} onNavigate={handleNavigate} onLogout={handleLogout} />}
 
             {currentPage === 'bmi' && <BMICalculator userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
-            {currentPage === 'blood' && <BloodEvaluation user={userData} onBack={() => setCurrentPage('dashboard')} />}
+            {currentPage === 'blood' && <BloodEvaluation user={userData} onBack={() => setCurrentPage('dashboard')} initialViewReport={currentData} />}
             {currentPage === 'fitness' && <FitnessHelper userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'homeworkout' && <HomeWorkout onBack={() => setCurrentPage('dashboard')} />}
             {currentPage === 'weightprogress' && <WeightProgress userProfile={userData} onBack={() => setCurrentPage('dashboard')} />}

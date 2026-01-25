@@ -94,3 +94,49 @@ export const generateDiseasePredictions = (extractedValues) => {
 
     return predictions;
 };
+
+export const analyzeBloodReport = (extractedValues, existingRisks = []) => {
+    const results = [];
+    const suggestions = [];
+
+    Object.keys(extractedValues).forEach(key => {
+        const val = parseFloat(extractedValues[key]);
+        const range = MEDICAL_RANGES[key];
+        if (!range) return;
+
+        let status = 'Normal';
+        if (val < range.min) status = 'Low';
+        if (val > range.max) status = 'High';
+
+        const fitnessImpact = status === 'Low' ? range.impact?.low : (status === 'High' ? range.impact?.high : null);
+
+        if (status !== 'Normal') {
+            suggestions.push({
+                parameter: key,
+                status: status,
+                foods: range.foods,
+                fitnessImpact: fitnessImpact
+            });
+        }
+
+        results.push({
+            parameter: key,
+            value: val,
+            unit: range.unit,
+            range: `${range.min}-${range.max}`,
+            status,
+            fitnessImpact
+        });
+    });
+
+    // If risks weren't passed, generate them now
+    const risks = existingRisks.length > 0 ? existingRisks : generateDiseasePredictions(extractedValues);
+
+    return {
+        date: new Date().toLocaleDateString(),
+        values: extractedValues,
+        results,
+        suggestions,
+        risks
+    };
+};

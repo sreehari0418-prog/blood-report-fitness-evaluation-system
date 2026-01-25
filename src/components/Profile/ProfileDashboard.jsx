@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, User, Activity, FileText, Settings, Heart, Save, Share2 } from 'lucide-react';
+import { ChevronLeft, User, Activity, FileText, Settings, Heart, Save, Share2, Trash, Eye } from 'lucide-react';
 // PDF Import removed
 
 // ... (inside component) ...
@@ -44,6 +44,17 @@ const ProfileDashboard = ({ user, onClose, onLogout, onNavigate }) => {
         setIsEditing(false);
         // Dispatch custom event or callback if needed to update global user context
         alert("Profile saved successfully!");
+    };
+
+    const handleDeleteReport = (index) => {
+        if (!window.confirm("Are you sure you want to delete this report?")) return;
+
+        const updatedHistory = [...reportHistory];
+        updatedHistory.splice(index, 1);
+        setReportHistory(updatedHistory);
+
+        const reportKey = user.email ? `reports_${user.email}` : 'blood_reports';
+        localStorage.setItem(reportKey, JSON.stringify(updatedHistory));
     };
 
     const calculateBMI = () => {
@@ -175,8 +186,16 @@ const ProfileDashboard = ({ user, onClose, onLogout, onNavigate }) => {
                                         <div className="r-info">
                                             <span className="r-date">{report.date}</span>
                                             <span className="r-summary">{report.results.length} Parameters Analyzed</span>
+                                            {/* Tag if from Diet section (optional heuristic) */}
                                         </div>
-                                        <button className="r-action" onClick={() => alert("Report details view simulated.")}>View</button>
+                                        <div className="r-actions-row">
+                                            <button className="icon-btn-small" onClick={() => onNavigate('blood', report)} title="View Detail">
+                                                <Eye size={16} color="var(--color-primary)" />
+                                            </button>
+                                            <button className="icon-btn-small delete" onClick={() => handleDeleteReport(idx)} title="Delete">
+                                                <Trash size={16} color="#ef4444" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -266,7 +285,13 @@ const ProfileDashboard = ({ user, onClose, onLogout, onNavigate }) => {
                 .r-info { flex: 1; display: flex; flex-direction: column; }
                 .r-date { font-weight: 600; font-size: 14px; }
                 .r-summary { font-size: 12px; color: #64748b; }
-                .r-action { font-size: 12px; color: var(--color-primary); border: 1px solid var(--color-primary); padding: 4px 10px; border-radius: 6px; background: none; }
+                .r-actions-row { display: flex; gap: 8px; }
+                .icon-btn-small { 
+                    background: #f1f5f9; border: none; padding: 6px; border-radius: 6px; 
+                    cursor: pointer; display: flex; align-items: center; justify-content: center;
+                }
+                .icon-btn-small:hover { background: #e2e8f0; }
+                .icon-btn-small.delete:hover { background: #fee2e2; }
 
                 .export-btn {
                      width: 100%; margin-top: 20px; padding: 12px;

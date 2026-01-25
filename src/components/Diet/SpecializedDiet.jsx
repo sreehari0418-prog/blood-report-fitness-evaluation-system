@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Utensils, AlertCircle, Upload, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { generateDietPlan } from '../../utils/dietGenerator';
-import { MEDICAL_RANGES, generateDiseasePredictions } from '../../utils/bloodAnalysis';
+import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport } from '../../utils/bloodAnalysis';
 import Tesseract from 'tesseract.js';
 
 const SpecializedDiet = ({ onBack, user }) => {
@@ -100,31 +100,21 @@ const SpecializedDiet = ({ onBack, user }) => {
                 return;
             }
 
-            // Generate "Analysis" object structure expected by generateDietPlan
-            const results = [];
-            Object.keys(extractedValues).forEach(key => {
-                const val = extractedValues[key];
-                const range = MEDICAL_RANGES[key];
-                if (!range) return;
-                let status = 'Normal';
-                if (val < range.min) status = 'Low';
-                if (val > range.max) status = 'High';
-                results.push({ parameter: key, value: val, status });
-            });
+            // Use Shared Analysis Logic to ensure data consistency with Blood Analyzer
+            const fullAnalysisResults = analyzeBloodReport(extractedValues);
 
-            const syntheticReport = {
-                date: new Date().toLocaleDateString(),
-                values: extractedValues,
-                results: results
-            };
+            // Generate Diet Plan
+            setDietPlan(generateDietPlan(fullAnalysisResults));
+            setReportData(fullAnalysisResults);
 
-            // Saves this report to user history so it persists
+            // Saves this report to user history so it persists in Analyzer & Profile
             const reportKey = (user && user.email) ? `reports_${user.email}` : `temp_reports_${Date.now()}`;
-            const existing = localStorage.getItem(reportKey) ? JSON.parse(localStorage.getItem(reportKey)) : [];
-            localStorage.setItem(reportKey, JSON.stringify([syntheticReport, ...existing]));
 
-            setReportData(syntheticReport);
-            setDietPlan(generateDietPlan(syntheticReport));
+            // IMPORTANT: Fetch latest from storage to append, avoiding overwrite issues
+            const existing = JSON.parse(localStorage.getItem(reportKey) || '[]');
+
+            const newHistory = [fullAnalysisResults, ...existing];
+            localStorage.setItem(reportKey, JSON.stringify(newHistory));
 
         } catch (err) {
             console.error(err);
