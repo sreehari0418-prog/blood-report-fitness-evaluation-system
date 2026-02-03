@@ -201,38 +201,56 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         try {
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-            const page = await pdf.getPage(1);
 
-            // STRATEGY 1: Direct Text (High Accuracy)
-            const textContent = await page.getTextContent();
-            const rawPdfText = textContent.items.map(item => item.str).join('\n');
+            let fullText = "";
 
-            if (rawPdfText.length > 50) {
-                console.log("Digital PDF used.");
-                setStatusText('Extracting Digital Text...');
-                processTextData(rawPdfText);
-                return;
+            // Loop through ALL pages
+            for (let i = 1; i <= pdf.numPages; i++) {
+                setStatusText(`Scanning Page ${i} of ${pdf.numPages}...`);
+                const page = await pdf.getPage(i);
+
+                // STRATEGY 1: Direct Text (High Accuracy)
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join('\n');
+
+                if (pageText.length > 50) {
+                    console.log(`Page ${i}: Digital text found.`);
+                    fullText += pageText + "\n";
+                } else {
+                    // STRATEGY 2: OCR Fallback (Image Scan)
+                    console.log(`Page ${i}: Scanned image detected. Using OCR.`);
+
+                    const viewport = page.getViewport({ scale: 2.5 });
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    // Convert to Blob and Scan with Tesseract immediately
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    if (blob) {
+                        const { data: { text } } = await Tesseract.recognize(
+                            blob, 'eng',
+                            { logger: () => { } }
+                        );
+                        fullText += text + "\n";
+                    }
+                }
             }
 
-            // STRATEGY 2: OCR Fallback (Image Scan)
-            console.log("Scanned PDF detected. Switching to OCR.");
-            setStatusText('Scanned PDF detected. Converting to Image...');
-
-            const viewport = page.getViewport({ scale: 2.5 });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-            canvas.toBlob((blob) => {
-                if (blob) processImage(blob, true);
-            }, 'image/png');
+            if (fullText.length > 20) {
+                setStatusText('Analyzing compiled report...');
+                processTextData(fullText);
+            } else {
+                alert("Could not extract meaningful text from this PDF.");
+                setIsLoading(false);
+            }
 
         } catch (err) {
             console.error(err);
-            alert("Error processing PDF.");
+            alert("Error processing PDF: " + err.message);
             setIsLoading(false);
         }
     };
