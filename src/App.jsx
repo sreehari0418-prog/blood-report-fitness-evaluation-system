@@ -11,6 +11,7 @@ import WeightProgress from './components/WeightProgress'
 import AIChat from './components/Chat/AIChat'
 import Toast from './components/Toast'
 import SpecializedDiet from './components/Diet/SpecializedDiet'
+import { setupNotifications, schedule3MonthReminder, addNotificationListeners } from './utils/notifications'
 
 function App() {
     // Check for existing session immediately to avoid flash of login screen
@@ -24,11 +25,54 @@ function App() {
     const [toastMsg, setToastMsg] = useState(null);
 
     React.useEffect(() => {
-        // Attempt to load user
-        const saved = localStorage.getItem('user_profile');
-        if (saved) {
-            setUserData(JSON.parse(saved));
-        }
+        // Setup Notifications System
+        const initNotifications = async () => {
+            const permissionGranted = await setupNotifications();
+            if (permissionGranted) {
+                console.log('Notifications enabled');
+
+                // Add notification listeners
+                addNotificationListeners();
+
+                // Schedule 3-month reminder (or reschedule if already exists)
+                const nextCheckupDate = await schedule3MonthReminder();
+                if (nextCheckupDate) {
+                    console.log('Next blood checkup reminder:', nextCheckupDate.toLocaleDateString());
+                }
+            }
+        };
+
+        initNotifications();
+
+        // Firebase Auth State Listener - replaces manual session check
+        const unsubscribe = api.onAuthStateChange(async (firebaseUser) => {
+            if (firebaseUser) {
+                // User is logged in
+                console.log('User logged in:', firebaseUser.email);
+                setUser({ email: firebaseUser.email, id: firebaseUser.uid });
+
+                // Load profile from Firestore
+                try {
+                    const response = await api.getProfile();
+                    if (response.success && response.profile) {
+                        setUserData(response.profile);
+                        setCurrentPage('dashboard');
+                    } else {
+                        // No profile found, go to setup
+                        setCurrentPage('profile_setup');
+                    }
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                    setCurrentPage('profile_setup');
+                }
+            } else {
+                // User is logged out
+                console.log('User logged out');
+                setUser(null);
+                setUserData(null);
+                setCurrentPage('login');
+            }
+        });
 
         // Simple reminder system (no welcome message)
         const messages = [
@@ -45,7 +89,10 @@ function App() {
             setToastMsg(randomMsg);
         }, 120000); // Every 2 minutes (less frequent)
 
-        return () => clearInterval(interval);
+        return () => {
+            clearInterval(interval);
+            unsubscribe(); // Clean up auth listener
+        };
     }, []);
 
     const handleLogin = async (userAuth, isSignup = false) => {
@@ -106,11 +153,9 @@ function App() {
         setCurrentPage(pageId);
     };
 
-    const handleLogout = () => {
-        localStorage.removeItem('user_profile');
-        setUser(null);
-        setUserData(null);
-        setCurrentPage('login');
+    const handleLogout = async () => {
+        await api.logout();
+        // Firebase auth listener will handle state reset automatically
     };
 
     return (

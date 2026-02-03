@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Upload, FileText, CheckCircle, AlertTriangle, AlertCircle, Search, ScanLine } from 'lucide-react';
 import Tesseract from 'tesseract.js';
 import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport, KEYWORD_MAP } from '../../utils/bloodAnalysis';
+import { predictDiseases } from '../../utils/mlService';
+import PredictionResult from '../PredictionResult';
 
 const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [report, setReport] = useState(null);
@@ -212,12 +214,23 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             }
 
             // ** Run Disease Prediction Engine **
-            const predictedRisks = generateDiseasePredictions(extractedValues);
+            // 1. Rule-based (Legacy/Fallback)
+            const ruleBasedRisks = generateDiseasePredictions(extractedValues);
+
+            // 2. ML-based (ONNX)
+            let mlPredictions = [];
+            try {
+                mlPredictions = await predictDiseases(extractedValues);
+                console.log("ML Predictions:", mlPredictions);
+            } catch (err) {
+                console.error("ML Prediction Failed:", err);
+            }
 
             analyzeReport({
                 date: new Date().toLocaleDateString(),
                 values: extractedValues,
-                risks: predictedRisks // Pass to analyzeReport
+                risks: ruleBasedRisks,
+                mlPredictions: mlPredictions
             });
 
         } catch (err) {
@@ -237,8 +250,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         if (file.type.startsWith('image/')) {
             setReport(file);
 
-            if (scanMode === 'advanced' && serverStatus === 'online') {
-                processWithServer(file);
+            if (enableLens) { // Simplified logic here as we focus on ML
+                processImage(file);
             } else {
                 processImage(file);
             }
@@ -247,57 +260,14 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         }
     };
 
-    // --- SERVER SIDE LOGIC ---
-    const processWithServer = async (file) => {
-        setIsLoading(true);
-        setStatusText('Sending to ML Neural Network...');
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-        try {
-            const response = await fetch(`${API_URL}/analyze`, {
-                method: 'POST',
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) throw new Error(data.error || "Server Error");
-
-            console.log("ML Results:", data);
-
-            // For now, since model isn't trained, we might not get perfect keys.
-            // We interpret the raw results or mock success for demo.
-            // In a real app, 'extract.py' would return exact keys like 'hemoglobin'.
-
-            // DEMO FALLBACK: If raw_results is empty (untrained model), use Tesseract as backup
-            // or just notify user.
-            if (!data.raw_results || data.raw_results.length === 0) {
-                alert("ML Model returned no data (Model likely needs training). Switching to client-side OCR for this scan.");
-                processImage(file); // Fallback
-                return;
-            }
-
-            // If we had valid data, we would parse it here:
-            // const extractedValues = mapServerDataToValues(data.raw_results);
-            // analyzeReport({ date: ..., values: extractedValues });
-
-        } catch (err) {
-            console.error(err);
-            alert("Error connecting to Python Backend. Make sure 'server.py' is running!");
-            processImage(file); // Fallback to basic
-        } finally {
-            setIsLoading(false);
-            setStatusText('');
-        }
-    };
-
     const analyzeReport = (data) => {
         // Use shared logic to generate full analysis structure
         const fullAnalysis = analyzeBloodReport(data.values, data.risks);
+
+        // Attach ML predictions to the final report object
+        if (data.mlPredictions) {
+            fullAnalysis.mlPredictions = data.mlPredictions;
+        }
 
         setAnalyzedData(fullAnalysis);
 
@@ -455,6 +425,9 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                         <h3>Report Analysis</h3>
                         <button className="text-btn" onClick={() => setAnalyzedData(null)}>Close</button>
                     </div>
+
+                    {/* NEW AI PREDICTION SECTION (ONNX) */}
+                    {analyzedData.mlPredictions && <PredictionResult predictions={analyzedData.mlPredictions} />}
 
                     {/* AI DISEASE RISK SECTION (NEW) */}
                     {analyzedData.risks && analyzedData.risks.length > 0 && (

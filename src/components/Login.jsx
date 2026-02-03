@@ -28,33 +28,26 @@ const Login = ({ onLogin }) => {
 
     try {
       const { api } = await import('../utils/api.js');
+      let result;
 
       if (isLogin) {
         // --- LOGIN LOGIC ---
-        const response = await api.login(email, password);
-
-        if (response.success) {
-          localStorage.setItem('auth_token', response.token);
-          onLogin({ email: response.user.email, name: email.split('@')[0] }, false);
-        } else {
-          setError(response.error || 'Login failed');
-          setIsLoading(false);
-        }
+        result = await api.login(email, password);
       } else {
         // --- SIGNUP LOGIC ---
-        const response = await api.register(email, password);
+        result = await api.register(email, password);
+      }
 
-        if (response.success) {
-          localStorage.setItem('auth_token', response.token);
-          onLogin({ email: response.user.email, name: email.split('@')[0] }, true);
-        } else {
-          setError(response.error || 'Registration failed');
-          setIsLoading(false);
-        }
+      if (result.success) {
+        // Firebase handles auth state - no need to store token
+        onLogin(result.user, !isLogin); // Pass true for signup
+      } else {
+        setError(result.error || 'Authentication failed');
       }
     } catch (error) {
       console.error('Authentication error:', error);
-      setError('Could not connect to server. Please try again later.');
+      setError('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };
