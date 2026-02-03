@@ -445,7 +445,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                             {isLoading ? (statusText || 'Scanning...') : 'Select Image (JPG/PNG)'}
                             <input
                                 type="file"
-                                accept="image/*"
+                                accept="image/*,application/pdf"
                                 hidden
                                 onChange={handleFileUpload}
                                 disabled={isLoading}
