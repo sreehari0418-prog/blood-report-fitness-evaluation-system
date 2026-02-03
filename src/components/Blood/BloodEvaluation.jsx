@@ -129,9 +129,31 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             return words.some(w => Math.abs(w.length - cleanKey.length) <= tolerance && levenshtein(w, cleanKey) <= tolerance);
         };
 
-        rows.forEach(row => {
+        // 2. Header Filtering (Ignore Patient Details)
+        let startIndex = 0;
+        const HEADER_KEYWORDS = ['investigation', 'test name', 'result', 'observed value', 'unit', 'reference range', 'biological reference'];
+
+        // Try to find the start of the "Results Table"
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i].toLowerCase();
+            if (HEADER_KEYWORDS.some(k => row.includes(k))) {
+                startIndex = i; // Found the table header
+                console.log(`Table header detected at line ${i}. Ignoring previous text.`);
+                break;
+            }
+        }
+
+        const dataRows = rows.slice(startIndex);
+
+        dataRows.forEach(row => {
             const lowerRow = row.toLowerCase().trim();
             if (!lowerRow) return;
+
+            // 3. Safety Filter: Ignore lines that still look like Patient Info
+            // (Even if we missed the header, these keys are risky)
+            const IGNORE_KEYS = ['patient', 'name:', 'age:', 'sex:', 'gender:', 'id:', 'referred by:', 'dr.', 'date:', 'time:'];
+            if (IGNORE_KEYS.some(k => lowerRow.includes(k))) return;
+
 
             Object.keys(KEYWORD_MAP).forEach(paramKey => {
                 if (extractedValues[paramKey]) return; // Already found
