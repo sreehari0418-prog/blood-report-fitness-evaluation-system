@@ -97,7 +97,19 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         const rows = text.split('\n');
         const extractedValues = {};
 
-        // 1. Levenshtein Distance for Fuzzy Matching (Simulates "Training")
+        // 1. Metadata Extraction (Before Header Filtering)
+        let patientMeta = { Age: 30, Gender: 'M' }; // Defaults
+        for (let i = 0; i < Math.min(rows.length, 20); i++) {
+            const row = rows[i].toLowerCase();
+            if (row.includes('age')) {
+                const ageMatch = row.match(/(\d{1,3})/);
+                if (ageMatch) patientMeta.Age = parseInt(ageMatch[0]);
+            }
+            if (row.includes('male') || row.includes('sex : m')) patientMeta.Gender = 'M';
+            else if (row.includes('female') || row.includes('sex : f')) patientMeta.Gender = 'F';
+        }
+
+        // 2. Levenshtein Distance for Fuzzy Matching (Simulates "Training")
         const levenshtein = (a, b) => {
             const matrix = [];
             for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
@@ -222,17 +234,55 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         if (Object.keys(extractedValues).length === 0 && text.length > 50) {
             console.warn("No values extracted despite text content.");
         }
-        finishAnalysis(extractedValues);
+        finishAnalysis(extractedValues, patientMeta);
     };
 
-    const finishAnalysis = async (extractedValues) => {
+    const finishAnalysis = async (extractedValues, patientMeta = { Age: 30, Gender: 'M' }) => {
         // 1. Rule-based Risk
         const ruleBasedRisks = generateDiseasePredictions(extractedValues);
 
-        // 2. ML Prediction (ONNX)
+        // 2. Advanced ML Prediction (Python Backend)
         let mlPredictions = [];
         try {
-            mlPredictions = await predictDiseases(extractedValues);
+            console.log("🧠 calling Advanced ML Model...");
+            const mlPayload = {
+                Age: patientMeta.Age,
+                Gender: patientMeta.Gender,
+                Total_Leukocyte_Count: extractedValues['total_count'] || 0,
+                RBC_Count: extractedValues['rbc_count'] || 0,
+                Hemoglobin: extractedValues['hemoglobin'] || 0,
+                Hematocrit: extractedValues['hematocrit'] || 0,
+                MCV: extractedValues['mcv'] || 0,
+                MCH: extractedValues['mch'] || 0,
+                MCHC: extractedValues['mchc'] || 0,
+                RDW_CV: extractedValues['rdw'] || 0,
+                Platelet_Count: extractedValues['platelet_count'] || 0,
+                Neutrophils: extractedValues['neutrophil'] || 0,
+                Lymphocytes: extractedValues['lymphocyte'] || 0,
+                Monocytes: extractedValues['monocyte'] || 0,
+                Eosinophils: extractedValues['eosinophil'] || 0,
+                Basophils: extractedValues['basophil'] || 0,
+                Absolute_Neutrophil_Count: extractedValues['absolute_neutrophil_count'] || 0,
+                Absolute_Lymphocyte_Count: extractedValues['absolute_lymphocyte_count'] || 0
+            };
+
+            const response = await fetch('http://localhost:5000/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mlPayload)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.status === 'success') {
+                    mlPredictions.push({
+                        disease: "Overall Health Status",
+                        warning: `ML Assessment: ${result.prediction} (${result.confidence} Confidence)`,
+                        probability: result.confidence,
+                        isDetected: result.prediction !== 'Normal'
+                    });
+                }
+            }
         } catch (err) {
             console.error("ML Error:", err);
         }
