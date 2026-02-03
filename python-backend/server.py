@@ -62,7 +62,95 @@ def analyze_report():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({"status": "running", "model": "layoutlmv3"}), 200
+    return jsonify({"status": "running", "model": "Advanced Random Forest"}), 200
+
+# Load Advanced ML Model
+import joblib
+import pandas as pd
+import numpy as np
+
+MODEL_PATH = "ml_models_advanced/best_blood_model.pkl"
+ML_ARTIFACTS = None
+
+try:
+    if os.path.exists(MODEL_PATH):
+        print("🧠 Loading Advanced ML Model...")
+        ML_ARTIFACTS = joblib.load(MODEL_PATH)
+        print("✅ Model & Artifacts Loaded Successfully")
+    else:
+        print("⚠️ Model file not found. Please train the model first.")
+except Exception as e:
+    print(f"❌ Failed to load model: {e}")
+
+@app.route('/predict', methods=['POST'])
+def predict_disease():
+    if not ML_ARTIFACTS:
+        return jsonify({"error": "Model not loaded"}), 503
+    
+    try:
+        data = request.json
+        print(f"📥 Received Prediction Request: {data}")
+
+        # 1. Prepare Dataframe with correct column order
+        feature_names = ML_ARTIFACTS['feature_names']
+        
+        # Create input dictionary with defaults for missing values
+        input_data = {}
+        for col in feature_names:
+            val = data.get(col)
+            
+            # Special handling for Gender
+            if col == 'Gender':
+                val = val if val else 'M' # Default Male
+            else:
+                # Numeric default 0.0 or mean if we had it. 
+                # For safety, use 0.0 or try to parse
+                try:
+                    val = float(val)
+                except:
+                    val = 0.0
+            
+            input_data[col] = [val]
+        
+        df_input = pd.DataFrame(input_data)
+
+        # 2. Preprocessing
+        # Encode Gender
+        if 'Gender' in df_input.columns:
+            le_gender = ML_ARTIFACTS['le_gender']
+            # Handle unknown labels safely
+            try:
+                df_input['Gender'] = le_gender.transform(df_input['Gender'])
+            except:
+                 df_input['Gender'] = 0 # Fallback 
+
+        # Scale Features
+        scaler = ML_ARTIFACTS['scaler']
+        X_scaled = pd.DataFrame(scaler.transform(df_input[feature_names]), columns=feature_names)
+
+        # 3. Predict
+        model = ML_ARTIFACTS['model']
+        pred_idx = model.predict(X_scaled)[0]
+        pred_label = ML_ARTIFACTS['le_target'].inverse_transform([pred_idx])[0]
+        
+        # Get Probability if available
+        confidence = 0.0
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(X_scaled)
+            confidence = float(np.max(probs))
+
+        print(f"📤 Prediction: {pred_label} ({confidence:.2f})")
+
+        return jsonify({
+            "prediction": pred_label,
+            "confidence": f"{confidence*100:.1f}%",
+            "status": "success"
+        })
+
+    except Exception as e:
+        print(f"❌ Prediction Error: {e}")
+        return jsonify({"error": str(e)}), 400
+
 
 if __name__ == '__main__':
     print("🚀 ML Backend Server running on http://localhost:5000")
