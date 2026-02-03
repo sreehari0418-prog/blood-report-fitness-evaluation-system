@@ -40,47 +40,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         }
     }, [user, initialViewReport]);
 
-    // --- PDF HANDLING ---
-    const processPdf = async (file) => {
-        setIsLoading(true);
-        setStatusText('Reading PDF Document...');
 
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-
-            setStatusText(`Processing Page 1 of ${pdf.numPages}...`);
-
-            // Fetch the first page
-            const page = await pdf.getPage(1);
-
-            // Set scale high for better OCR (e.g., 2.0 or 3.0)
-            const viewport = page.getViewport({ scale: 2.5 });
-
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-
-            await page.render({ canvasContext: context, viewport: viewport }).promise;
-
-            setStatusText('Converting PDF to Image for Scanning...');
-
-            canvas.toBlob((blob) => {
-                if (blob) {
-                    // Pass the generated image blob to the existing OCR function
-                    processImage(blob, true); // true flag to indicate it's already processed/ready
-                } else {
-                    throw new Error("Failed to convert PDF page to image");
-                }
-            }, 'image/png');
-
-        } catch (err) {
-            console.error(err);
-            alert("Error reading PDF. Please ensure it is a valid file.");
-            setIsLoading(false);
-        }
-    };
 
     // --- IMAGE PREPROCESSING (Digital Lens) ---
     const preprocessImage = (imageFile) => {
@@ -130,163 +90,175 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         });
     };
 
-    // --- OCR LOGIC ---
-    const processImage = async (file, isPdfDerived = false) => {
-        setIsLoading(true);
-        setStatusText(isPdfDerived ? 'Scanning PDF (AI)...' : 'Applying Digital Lens (Enhancing Quality)...');
+    // --- SHARED TEXT PARSING LOGIC ---
+    const processTextData = (text) => {
+        console.log("Processing Extracted Text:", text);
 
-        try {
-            // If it's from PDF, we skip Digital Lens check as we already upscaled it
-            // Otherwise check 'enableLens'
-            const shouldPreprocess = !isPdfDerived && enableLens;
-            const processedFile = shouldPreprocess ? await preprocessImage(file) : file;
+        const rows = text.split('\n');
+        const extractedValues = {};
 
-            setStatusText('Scanning Report...');
+        rows.forEach(row => {
+            const lowerRow = row.toLowerCase().trim();
+            if (!lowerRow) return;
 
-            // 2. Recognize text using Tesseract
-            const { data: { text } } = await Tesseract.recognize(
-                processedFile,
-                'eng',
-                { logger: m => setStatusText(`${m.status} (${Math.round(m.progress * 100)}%)`) }
-            );
+            // Try to match each parameter via KEYWORD_MAP
+            Object.keys(KEYWORD_MAP).forEach(paramKey => {
+                const synonyms = KEYWORD_MAP[paramKey];
+                const foundSynonym = synonyms.find(s => lowerRow.includes(s));
 
-            console.log("Raw OCR Text:", text);
+                if (foundSynonym && !extractedValues[paramKey]) {
+                    const parts = lowerRow.split(foundSynonym);
+                    if (parts.length < 2) return;
 
-            // 2. Parse text with improved regex for tables
-            const rows = text.split('\n');
-            const extractedValues = {};
+                    const textAfterKeyword = parts.slice(1).join(' ').trim();
 
-            // Normalize helper
-            const normalize = (str) => str.toLowerCase().replace(/[^a-z0-9.]/g, '');
+                    // --- Improved Number Extraction ---
+                    let val = null;
 
-            // Specific Keyword mapping based on uploaded images
-            // KEYWORD_MAP is imported from utils/bloodAnalysis.js
-
-            rows.forEach(row => {
-                const lowerRow = row.toLowerCase().trim();
-                if (!lowerRow) return;
-
-                // Try to match each parameter
-                Object.keys(KEYWORD_MAP).forEach(paramKey => {
-                    const synonyms = KEYWORD_MAP[paramKey];
-                    const foundSynonym = synonyms.find(s => lowerRow.includes(s));
-
-                    if (foundSynonym && !extractedValues[paramKey]) {
-                        // FIX: "Ghost Values" / Extra Values Error
-                        // Problem: The scanner might pick up "12" from "12/05/2023 Hemoglobin" or "1. Hemoglobin"
-                        // Solution: Split the string by the keyword and ONLY look at the text AFTER the keyword (to the right).
-
-                        const parts = lowerRow.split(foundSynonym);
-                        if (parts.length < 2) return;
-
-                        const textAfterKeyword = parts.slice(1).join(' ').trim();
-
-                        // IMPROVED NUMBER EXTRACTION LOGIC
-                        // Common OCR Patterns:
-                        // ✓ "14.2 g/dL" → 14.2
-                        // ✓ "14 2 g/dl" → 14.2 (space instead of dot!)
-                        // ✓ "142 g/dl" → 14.2 (if way out of range, we'll fix with /10)
-                        // ✗ "Range: 12-16" → IGNORE (This is a range, not a value)
-                        // ✗ "12/05/2023" → IGNORE (Date)
-
-                        let val = null;
-
-                        // Step 1: Try normal decimal
-                        const decimalMatch = textAfterKeyword.match(/(\d+\.\d+)/);
-                        if (decimalMatch) {
-                            val = parseFloat(decimalMatch[0]);
+                    // 1. Normal decimal (e.g., "14.2")
+                    const decimalMatch = textAfterKeyword.match(/(\d+\.\d+)/);
+                    if (decimalMatch) {
+                        val = parseFloat(decimalMatch[0]);
+                    } else {
+                        // 2. OCR Error: Space instead of dot "14 2" -> 14.2
+                        const spacedDecimalMatch = textAfterKeyword.match(/(\d+)\s+(\d{1,2})(?!\d)/);
+                        if (spacedDecimalMatch && !textAfterKeyword.includes('-')) {
+                            val = parseFloat(spacedDecimalMatch[1] + '.' + spacedDecimalMatch[2]);
                         } else {
-                            // Step 2: Try "digit space digit" pattern (OCR error: "14 2" instead of "14.2")
-                            const spacedDecimalMatch = textAfterKeyword.match(/(\d+)\s+(\d{1,2})(?!\d)/);
-                            if (spacedDecimalMatch && !textAfterKeyword.includes('-')) {
-                                // Only accept if not part of a range (no dash nearby)
-                                val = parseFloat(spacedDecimalMatch[1] + '.' + spacedDecimalMatch[2]);
-                                console.log(`Detected spaced decimal: "${spacedDecimalMatch[0]}" → ${val}`);
-                            } else {
-                                // Step 3: Try plain integer (but be careful of ranges)
-                                const integerMatch = textAfterKeyword.match(/(\d+)/);
-                                if (integerMatch) {
-                                    // Check if this number is part of a range pattern like "12-16"
-                                    const rangePattern = new RegExp(integerMatch[0] + '\\s*-\\s*\\d+');
-                                    if (rangePattern.test(textAfterKeyword)) {
-                                        // This is a range value, skip it
-                                        console.log(`Skipping range value: ${integerMatch[0]}`);
-                                        return;
-                                    }
+                            // 3. Integer (Watch out for ranges)
+                            const integerMatch = textAfterKeyword.match(/(\d+)/);
+                            if (integerMatch) {
+                                // Ignore if part of a range "12-16"
+                                const rangePattern = new RegExp(integerMatch[0] + '\\s*-\\s*\\d+');
+                                if (!rangePattern.test(textAfterKeyword)) {
                                     val = parseFloat(integerMatch[0]);
                                 }
                             }
                         }
-
-                        if (val !== null && !isNaN(val)) {
-                            // SANITY CHECK: Compare against Medical Range to detect OCR errors (like 53 instead of 5.3)
-                            const range = MEDICAL_RANGES[paramKey];
-                            if (range) {
-                                // If value is way out of range (e.g., > 5x max), it might be a missing decimal
-                                // Heuristic: If we dividing by 10 puts it right in the middle of Normal range, assume missed decimal.
-                                // But be careful not to auto-fix actual high values. Only if it looks like a formatting error.
-
-                                // Specific Fix for common Tesseract "missed dot" error:
-                                if (val > range.max * 5) {
-                                    if ((val / 10) >= range.min && (val / 10) <= range.max) {
-                                        console.log(`Auto-correcting ${paramKey}: ${val} -> ${val / 10}`);
-                                        val = val / 10;
-                                    } else if ((val / 100) >= range.min && (val / 100) <= range.max) {
-                                        // e.g. 5.35 -> 535
-                                        val = val / 100;
-                                    }
-                                }
-
-                                // Ignore if it looks like a Date (e.g. 2023) or completely wild
-                                if (val > 1900 && val < 2100 && paramKey !== 'total_count') {
-                                    return; // Likely a year
-                                }
-                            }
-
-                            extractedValues[paramKey] = val;
-                        }
                     }
-                });
+
+                    if (val !== null && !isNaN(val)) {
+                        // --- Sanity Checks & Correction ---
+                        const range = MEDICAL_RANGES[paramKey];
+                        if (range) {
+                            // Fix "Missed Dot" error (e.g. 53 -> 5.3)
+                            if (val > range.max * 5) {
+                                if ((val / 10) >= range.min && (val / 10) <= range.max) val = val / 10;
+                                else if ((val / 100) >= range.min && (val / 100) <= range.max) val = val / 100;
+                            }
+                            // Ignore Year-like values
+                            if (val > 1900 && val < 2100 && paramKey !== 'total_count') return;
+                        }
+                        extractedValues[paramKey] = val;
+                    }
+                }
             });
+        });
 
-            // 3. Analyze only what was found
-            if (Object.keys(extractedValues).length === 0) {
-                // SHOW ERROR with Raw Text for debugging
-                const userConfirmed = window.confirm(
-                    "Automatic scanning failed to find exact values. \n\nSee raw text?\n" + text.substring(0, 100) + "..."
-                );
-                if (userConfirmed) alert("Full Text Found by AI:\n" + text);
+        // Check Findings
+        if (Object.keys(extractedValues).length === 0) {
+            if (text.length < 50) {
+                alert("Could not extract meaningful text. Please use a clearer image or digital PDF.");
+            } else {
+                const confirm = window.confirm(`No values found. View raw text?\n\n${text.substring(0, 100)}...`);
+                if (confirm) alert(text);
+            }
+            setIsLoading(false);
+            return;
+        }
 
-                setIsLoading(false);
+        finishAnalysis(extractedValues);
+    };
+
+    const finishAnalysis = async (extractedValues) => {
+        // 1. Rule-based Risk
+        const ruleBasedRisks = generateDiseasePredictions(extractedValues);
+
+        // 2. ML Prediction (ONNX)
+        let mlPredictions = [];
+        try {
+            mlPredictions = await predictDiseases(extractedValues);
+        } catch (err) {
+            console.error("ML Error:", err);
+        }
+
+        analyzeReport({
+            date: new Date().toLocaleDateString(),
+            values: extractedValues,
+            risks: ruleBasedRisks,
+            mlPredictions: mlPredictions
+        });
+
+        setIsLoading(false);
+        setStatusText('');
+    };
+
+    // --- PDF HANDLING (Hybrid: Direct Text -> OCR Fallback) ---
+    const processPdf = async (file) => {
+        setIsLoading(true);
+        setStatusText('Reading PDF...');
+
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            const page = await pdf.getPage(1);
+
+            // STRATEGY 1: Direct Text (High Accuracy)
+            const textContent = await page.getTextContent();
+            const rawPdfText = textContent.items.map(item => item.str).join('\n');
+
+            if (rawPdfText.length > 50) {
+                console.log("Digital PDF used.");
+                setStatusText('Extracting Digital Text...');
+                processTextData(rawPdfText);
                 return;
             }
 
-            // ** Run Disease Prediction Engine **
-            // 1. Rule-based (Legacy/Fallback)
-            const ruleBasedRisks = generateDiseasePredictions(extractedValues);
+            // STRATEGY 2: OCR Fallback (Image Scan)
+            console.log("Scanned PDF detected. Switching to OCR.");
+            setStatusText('Scanned PDF detected. Converting to Image...');
 
-            // 2. ML-based (ONNX)
-            let mlPredictions = [];
-            try {
-                mlPredictions = await predictDiseases(extractedValues);
-                console.log("ML Predictions:", mlPredictions);
-            } catch (err) {
-                console.error("ML Prediction Failed:", err);
-            }
+            const viewport = page.getViewport({ scale: 2.5 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
 
-            analyzeReport({
-                date: new Date().toLocaleDateString(),
-                values: extractedValues,
-                risks: ruleBasedRisks,
-                mlPredictions: mlPredictions
-            });
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            canvas.toBlob((blob) => {
+                if (blob) processImage(blob, true);
+            }, 'image/png');
 
         } catch (err) {
             console.error(err);
-            alert("Error parsing image. Please try a clearer photo.");
-        } finally {
+            alert("Error processing PDF.");
             setIsLoading(false);
-            setStatusText('');
+        }
+    };
+
+    // --- OCR LOGIC ---
+    const processImage = async (file, isPdfDerived = false) => {
+        setIsLoading(true);
+        setStatusText(isPdfDerived ? 'Scanning PDF Image...' : 'Applying Digital Lens...');
+
+        try {
+            const shouldPreprocess = !isPdfDerived && enableLens;
+            const processedFile = shouldPreprocess ? await preprocessImage(file) : file;
+
+            setStatusText('Scanning Text (AI)...');
+
+            const { data: { text } } = await Tesseract.recognize(
+                processedFile, 'eng',
+                { logger: m => setStatusText(`${m.status} (${Math.round(m.progress * 100)}%)`) }
+            );
+
+            processTextData(text);
+
+        } catch (err) {
+            console.error(err);
+            alert("Error scanning image.");
+            setIsLoading(false);
         }
     };
 
