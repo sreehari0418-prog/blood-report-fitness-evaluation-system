@@ -5,6 +5,12 @@ import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport, KEYWORD
 import { predictDiseases } from '../../utils/mlService';
 import PredictionResult from '../PredictionResult';
 
+import * as pdfjsLib from 'pdfjs-dist';
+// Explicitly load worker for Vite
+import pdfWorker from 'pdfjs-dist/build/pdf.worker?url';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+
 const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [report, setReport] = useState(null);
     const [analyzedData, setAnalyzedData] = useState(null);
@@ -34,7 +40,47 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         }
     }, [user, initialViewReport]);
 
+    // --- PDF HANDLING ---
+    const processPdf = async (file) => {
+        setIsLoading(true);
+        setStatusText('Reading PDF Document...');
 
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+
+            setStatusText(`Processing Page 1 of ${pdf.numPages}...`);
+
+            // Fetch the first page
+            const page = await pdf.getPage(1);
+
+            // Set scale high for better OCR (e.g., 2.0 or 3.0)
+            const viewport = page.getViewport({ scale: 2.5 });
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            setStatusText('Converting PDF to Image for Scanning...');
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    // Pass the generated image blob to the existing OCR function
+                    processImage(blob, true); // true flag to indicate it's already processed/ready
+                } else {
+                    throw new Error("Failed to convert PDF page to image");
+                }
+            }, 'image/png');
+
+        } catch (err) {
+            console.error(err);
+            alert("Error reading PDF. Please ensure it is a valid file.");
+            setIsLoading(false);
+        }
+    };
 
     // --- IMAGE PREPROCESSING (Digital Lens) ---
     const preprocessImage = (imageFile) => {
@@ -85,15 +131,17 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     };
 
     // --- OCR LOGIC ---
-    const processImage = async (file) => {
+    const processImage = async (file, isPdfDerived = false) => {
         setIsLoading(true);
-        setStatusText('Applying Digital Lens (Enhancing Quality)...');
+        setStatusText(isPdfDerived ? 'Scanning PDF (AI)...' : 'Applying Digital Lens (Enhancing Quality)...');
 
         try {
-            // 1. Preprocess the image (B&W, Contrast) - only if enabled
-            const processedFile = enableLens ? await preprocessImage(file) : file;
+            // If it's from PDF, we skip Digital Lens check as we already upscaled it
+            // Otherwise check 'enableLens'
+            const shouldPreprocess = !isPdfDerived && enableLens;
+            const processedFile = shouldPreprocess ? await preprocessImage(file) : file;
 
-            setStatusText('Scanning Enhanced Image...');
+            setStatusText('Scanning Report...');
 
             // 2. Recognize text using Tesseract
             const { data: { text } } = await Tesseract.recognize(
@@ -246,17 +294,16 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Check if it's an image
-        if (file.type.startsWith('image/')) {
+        // NEW: Handle PDF
+        if (file.type === 'application/pdf') {
+            processPdf(file);
+        }
+        // EXISTING: Handle Image
+        else if (file.type.startsWith('image/')) {
             setReport(file);
-
-            if (enableLens) { // Simplified logic here as we focus on ML
-                processImage(file);
-            } else {
-                processImage(file);
-            }
+            processImage(file);
         } else {
-            alert("Please upload an Image (JPG/PNG) for OCR scanning.");
+            alert("Please upload an Image (JPG/PNG) or PDF report.");
         }
     };
 
