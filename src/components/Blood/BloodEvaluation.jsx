@@ -90,83 +90,116 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         });
     };
 
-    // --- SHARED TEXT PARSING LOGIC ---
+    // --- SHARED TEXT PARSING LOGIC (Gen-2: Adaptive & Fuzzy) ---
     const processTextData = (text) => {
-        console.log("Processing Extracted Text:", text);
+        console.log("Processing Extracted Text (Gen-2 Engine)...");
 
         const rows = text.split('\n');
         const extractedValues = {};
+
+        // 1. Levenshtein Distance for Fuzzy Matching (Simulates "Training")
+        const levenshtein = (a, b) => {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) { matrix[i] = [i]; }
+            for (let j = 0; j <= a.length; j++) { matrix[0][j] = j; }
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(matrix[i - 1][j - 1] + 1, Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1));
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        };
+
+        const isFuzzyMatch = (text, keyword) => {
+            const cleanText = text.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const cleanKey = keyword.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            // Direct match
+            if (cleanText.includes(cleanKey)) return true;
+
+            // Fuzzy match (Tolerance: 1 error for short, 2 for long)
+            const tolerance = cleanKey.length > 5 ? 2 : 1;
+
+            // Check substrings (words)
+            const words = cleanText.split(/(?:[a-z]+)/).filter(w => w.length >= 3);
+            return words.some(w => Math.abs(w.length - cleanKey.length) <= tolerance && levenshtein(w, cleanKey) <= tolerance);
+        };
 
         rows.forEach(row => {
             const lowerRow = row.toLowerCase().trim();
             if (!lowerRow) return;
 
-            // Try to match each parameter via KEYWORD_MAP
             Object.keys(KEYWORD_MAP).forEach(paramKey => {
+                if (extractedValues[paramKey]) return; // Already found
+
                 const synonyms = KEYWORD_MAP[paramKey];
-                const foundSynonym = synonyms.find(s => lowerRow.includes(s));
 
-                if (foundSynonym && !extractedValues[paramKey]) {
-                    const parts = lowerRow.split(foundSynonym);
-                    if (parts.length < 2) return;
+                // Adaptive Match: Check synonyms with fuzzy tolerance
+                const matchedSynonym = synonyms.find(s => {
+                    const cleanRow = lowerRow.replace(/[^a-z0-9\s]/g, '');
+                    if (cleanRow.includes(s)) return true; // Fast path
 
-                    const textAfterKeyword = parts.slice(1).join(' ').trim();
+                    // Slow path: Typo check
+                    return s.split(' ').every(part => cleanRow.includes(part) || isFuzzyMatch(cleanRow, part));
+                });
 
-                    // --- Improved Number Extraction ---
-                    let val = null;
+                if (matchedSynonym) {
+                    // Extract potential numbers from the *entire* row (not just after keyword)
+                    // This handles "14.5 Hemoglobin" AND "Hemoglobin 14.5" layouts
 
-                    // 1. Normal decimal (e.g., "14.2")
-                    const decimalMatch = textAfterKeyword.match(/(\d+\.\d+)/);
-                    if (decimalMatch) {
-                        val = parseFloat(decimalMatch[0]);
-                    } else {
-                        // 2. OCR Error: Space instead of dot "14 2" -> 14.2
-                        const spacedDecimalMatch = textAfterKeyword.match(/(\d+)\s+(\d{1,2})(?!\d)/);
-                        if (spacedDecimalMatch && !textAfterKeyword.includes('-')) {
-                            val = parseFloat(spacedDecimalMatch[1] + '.' + spacedDecimalMatch[2]);
-                        } else {
-                            // 3. Integer (Watch out for ranges)
-                            const integerMatch = textAfterKeyword.match(/(\d+)/);
-                            if (integerMatch) {
-                                // Ignore if part of a range "12-16"
-                                const rangePattern = new RegExp(integerMatch[0] + '\\s*-\\s*\\d+');
-                                if (!rangePattern.test(textAfterKeyword)) {
-                                    val = parseFloat(integerMatch[0]);
-                                }
+                    // Advanced Number Cleaning:
+                    // 1. Replace 'O'/'o' with '0' inside numbers
+                    // 2. Fix '..' to '.'
+                    // 3. Replace ',' with '.' (European)
+                    let cleanNumbersRow = lowerRow
+                        .replace(/[oO](?=\d)/g, '0').replace(/(?<=\d)[oO]/g, '0')
+                        .replace(/\.\./g, '.')
+                        .replace(/,/g, '.');
+
+                    // Find all numbers
+                    const numberMatches = cleanNumbersRow.match(/(\d+\.?\d*)/g);
+
+                    if (numberMatches) {
+                        // Find the number that makes the most sense (Sanity Check)
+                        const validNumber = numberMatches.find(numStr => {
+                            let val = parseFloat(numStr);
+                            if (isNaN(val)) return false;
+
+                            // Filter out typical non-results
+                            if (val > 1900 && val < 2100 && paramKey !== 'total_count') return false; // Possible Year
+                            if (val === 0 && paramKey !== 'basophil') return false; // Usually 0 is rare except basophils
+
+                            // Check Medical Range Validity (if available)
+                            const range = MEDICAL_RANGES[paramKey];
+                            if (range) {
+                                // Fix "Missed Dot" error (e.g. 53 -> 5.3) - Automatic Scaling
+                                if (val > range.max * 5) val = val / 10;
+                                if (val > range.max * 5) val = val / 10; // Twice for 100x
+
+                                // Relaxed bounds for acceptance (0.1x to 10x of range)
+                                const minBound = range.min * 0.1;
+                                const maxBound = range.max * 10;
+                                return val >= minBound && val <= maxBound;
                             }
-                        }
-                    }
+                            return true; // No range = accept
+                        });
 
-                    if (val !== null && !isNaN(val)) {
-                        // --- Sanity Checks & Correction ---
-                        const range = MEDICAL_RANGES[paramKey];
-                        if (range) {
-                            // Fix "Missed Dot" error (e.g. 53 -> 5.3)
-                            if (val > range.max * 5) {
-                                if ((val / 10) >= range.min && (val / 10) <= range.max) val = val / 10;
-                                else if ((val / 100) >= range.min && (val / 100) <= range.max) val = val / 100;
-                            }
-                            // Ignore Year-like values
-                            if (val > 1900 && val < 2100 && paramKey !== 'total_count') return;
+                        if (validNumber) {
+                            extractedValues[paramKey] = parseFloat(validNumber);
                         }
-                        extractedValues[paramKey] = val;
                     }
                 }
             });
         });
 
-        // Check Findings
-        if (Object.keys(extractedValues).length === 0) {
-            if (text.length < 50) {
-                alert("Could not extract meaningful text. Please use a clearer image or digital PDF.");
-            } else {
-                const confirm = window.confirm(`No values found. View raw text?\n\n${text.substring(0, 100)}...`);
-                if (confirm) alert(text);
-            }
-            setIsLoading(false);
-            return;
+        // Debug & Finish
+        if (Object.keys(extractedValues).length === 0 && text.length > 50) {
+            console.warn("No values extracted despite text content.");
         }
-
         finishAnalysis(extractedValues);
     };
 
