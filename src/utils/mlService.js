@@ -1,7 +1,7 @@
 import * as ort from 'onnxruntime-web';
 
 // Config
-const MODEL_PATH = '/models/disease_prediction_model.onnx';
+const MODEL_PATH = `${import.meta.env.BASE_URL}models/disease_prediction_model.onnx`;
 
 // Feature order must match training
 const FEATURES = ['hemoglobin', 'wbc', 'rbc', 'platelets', 'glucose', 'cholesterol', 'creatinine', 'tsh'];
