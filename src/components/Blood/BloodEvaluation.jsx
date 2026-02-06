@@ -182,6 +182,11 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 });
 
                 if (matchedSynonym) {
+                    // CRITICAL FIX: Ensure the matched keyword appears in THIS row
+                    // This prevents random number extraction for unrelated parameters
+                    const keywordInRow = synonyms.some(syn => lowerRow.includes(syn.toLowerCase()));
+                    if (!keywordInRow) return; // Skip if keyword not in this row
+
                     // Extract potential numbers from the *entire* row (not just after keyword)
                     // This handles "14.5 Hemoglobin" AND "Hemoglobin 14.5" layouts
 
