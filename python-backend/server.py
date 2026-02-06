@@ -91,40 +91,22 @@ def predict_disease():
         data = request.json
         print(f"📥 Received Prediction Request: {data}")
 
-        # 1. Prepare Dataframe with correct column order
+        # 1. Prepare Dataframe with correct column order (16 medical features only)
         feature_names = ML_ARTIFACTS['feature_names']
         
-        # Create input dictionary with defaults for missing values
+        # Create input dictionary - all features are numeric CBC values
         input_data = {}
         for col in feature_names:
-            val = data.get(col)
-            
-            # Special handling for Gender
-            if col == 'Gender':
-                val = val if val else 'M' # Default Male
-            else:
-                # Numeric default 0.0 or mean if we had it. 
-                # For safety, use 0.0 or try to parse
-                try:
-                    val = float(val)
-                except:
-                    val = 0.0
-            
+            val = data.get(col, 0.0)  # Default to 0.0 if missing
+            try:
+                val = float(val)
+            except:
+                val = 0.0
             input_data[col] = [val]
         
         df_input = pd.DataFrame(input_data)
 
-        # 2. Preprocessing
-        # Encode Gender
-        if 'Gender' in df_input.columns:
-            le_gender = ML_ARTIFACTS['le_gender']
-            # Handle unknown labels safely
-            try:
-                df_input['Gender'] = le_gender.transform(df_input['Gender'])
-            except:
-                 df_input['Gender'] = 0 # Fallback 
-
-        # Scale Features
+        # 2. Preprocessing: Scale Features (No Gender encoding needed)
         scaler = ML_ARTIFACTS['scaler']
         X_scaled = pd.DataFrame(scaler.transform(df_input[feature_names]), columns=feature_names)
 

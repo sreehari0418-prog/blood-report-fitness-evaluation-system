@@ -46,35 +46,56 @@ def load_and_preprocess():
     df = pd.read_csv(DATA_FILE)
     print(f"   - Loaded {len(df)} rows.")
 
-    # 1. Cleaning: Drop purely numeric ID columns if any (none in this schema, but good practice)
-    # The schema provided: Age, Gender, WBC ... Health_Status
+    # 1. Define ONLY Medical CBC Features (Exclude Personal Metadata)
+    # This is the explicit list of valid medical test parameters
+    MEDICAL_FEATURES = [
+        'Total_Leukocyte_Count', 'RBC_Count', 'Hemoglobin', 'Hematocrit',
+        'MCV', 'MCH', 'MCHC', 'RDW_CV', 'Platelet_Count',
+        'Neutrophils', 'Lymphocytes', 'Monocytes', 'Eosinophils',
+        'Basophils', 'Absolute_Neutrophil_Count', 'Absolute_Lymphocyte_Count'
+    ]
     
-    # 2. Separate Features & Target
-    X = df.drop(columns=['Health_Status'])
+    # Map from CSV column names to expected names if they differ
+    # (e.g., if CSV has "WBC" instead of "Total_Leukocyte_Count")
+    COLUMN_MAPPING = {
+        'WBC': 'Total_Leukocyte_Count',
+        'RBC': 'RBC_Count',
+        'Platelet': 'Platelet_Count',
+        'RDW': 'RDW_CV',
+        'Abs_Neutrophil': 'Absolute_Neutrophil_Count',
+        'Abs_Lymphocyte': 'Absolute_Lymphocyte_Count'
+    }
+    
+    # Apply column renaming if needed
+    df = df.rename(columns=COLUMN_MAPPING)
+    
+    # 2. Extract Target
     y = df['Health_Status']
-
-    # 3. Encoding Categorical Features (Gender)
-    if 'Gender' in X.columns:
-        le_gender = LabelEncoder()
-        X['Gender'] = le_gender.fit_transform(X['Gender'])
-        print(f"   - Encoded Gender: {dict(zip(le_gender.classes_, le_gender.transform(le_gender.classes_)))}")
+    
+    # 3. Extract ONLY Medical Features (Filter out Age, Gender, etc.)
+    available_features = [f for f in MEDICAL_FEATURES if f in df.columns]
+    missing_features = [f for f in MEDICAL_FEATURES if f not in df.columns]
+    
+    if missing_features:
+        print(f"   ⚠️ Warning: Missing features in dataset: {missing_features}")
+        print(f"   ✅ Using available features: {available_features}")
+    
+    X = df[available_features]
+    print(f"   - Selected {len(available_features)} medical features (excluded Age, Gender, etc.)")
 
     # 4. Encoding Target
     le_target = LabelEncoder()
     y_encoded = le_target.fit_transform(y)
     print(f"   - Encoded Target Classes: {dict(zip(le_target.classes_, le_target.transform(le_target.classes_)))}")
 
-    # 5. Feature Selection / Dropping low importance
-    # Initial manual drop of non-physiological columns if present (e.g. valid IDs). 
-    # Current columns are all relevant features.
-
-    # 6. Scaling (MinMax as requested)
+    # 5. Normalization (MinMax: 0-1 range for better accuracy)
     scaler = MinMaxScaler()
     X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+    print(f"   - Normalized all {len(X.columns)} features to [0, 1] range")
     
-    return X_scaled, y_encoded, le_target, X.columns, scaler, le_gender
+    return X_scaled, y_encoded, le_target, X.columns, scaler
 
-def train_and_eval(X, y, le_target, feature_names, scaler, le_gender):
+def train_and_eval(X, y, le_target, feature_names, scaler):
     print("\n🧠 Training & Tuning Models...")
     
     # Split for final validation
@@ -182,7 +203,6 @@ def train_and_eval(X, y, le_target, feature_names, scaler, le_gender):
         'model': best_model,
         'scaler': scaler,
         'le_target': le_target,
-        'le_gender': le_gender,
         'feature_names': feature_names
     }
     joblib.dump(artifact, MODEL_FILE)
@@ -200,7 +220,7 @@ def train_and_eval(X, y, le_target, feature_names, scaler, le_gender):
 
 if __name__ == "__main__":
     try:
-        X_scaled, y_encoded, le_target, feature_names, scaler, le_gender = load_and_preprocess()
-        train_and_eval(X_scaled, y_encoded, le_target, feature_names, scaler, le_gender)
+        X_scaled, y_encoded, le_target, feature_names, scaler = load_and_preprocess()
+        train_and_eval(X_scaled, y_encoded, le_target, feature_names, scaler)
     except Exception as e:
         print(f"❌ Error: {e}")

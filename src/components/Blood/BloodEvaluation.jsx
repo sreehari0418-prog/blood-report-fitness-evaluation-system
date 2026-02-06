@@ -245,9 +245,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         let mlPredictions = [];
         try {
             console.log("🧠 calling Advanced ML Model...");
+            // Send ONLY 16 medical CBC features (no Age/Gender)
             const mlPayload = {
-                Age: patientMeta.Age,
-                Gender: patientMeta.Gender,
                 Total_Leukocyte_Count: extractedValues['total_count'] || 0,
                 RBC_Count: extractedValues['rbc_count'] || 0,
                 Hemoglobin: extractedValues['hemoglobin'] || 0,
