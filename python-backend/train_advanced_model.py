@@ -30,7 +30,7 @@ except ImportError:
     print("⚠️ LightGBM not found. Skipping...")
 
 # Constants
-DATA_FILE = "dataset/blood_health_dataset.csv"
+DATA_FILE = "dataset/advanced_blood_dataset.csv"  # 56 medical parameters
 MODEL_DIR = "ml_models_advanced"
 MODEL_FILE = os.path.join(MODEL_DIR, "best_blood_model.pkl")
 
@@ -46,43 +46,19 @@ def load_and_preprocess():
     df = pd.read_csv(DATA_FILE)
     print(f"   - Loaded {len(df)} rows.")
 
-    # 1. Define ONLY Medical CBC Features (Exclude Personal Metadata)
-    # This is the explicit list of valid medical test parameters
-    MEDICAL_FEATURES = [
-        'Total_Leukocyte_Count', 'RBC_Count', 'Hemoglobin', 'Hematocrit',
-        'MCV', 'MCH', 'MCHC', 'RDW_CV', 'Platelet_Count',
-        'Neutrophils', 'Lymphocytes', 'Monocytes', 'Eosinophils',
-        'Basophils', 'Absolute_Neutrophil_Count', 'Absolute_Lymphocyte_Count'
-    ]
-    
-    # Map from CSV column names to expected names if they differ
-    # (e.g., if CSV has "WBC" instead of "Total_Leukocyte_Count")
-    COLUMN_MAPPING = {
-        'WBC': 'Total_Leukocyte_Count',
-        'RBC': 'RBC_Count',
-        'Platelet': 'Platelet_Count',
-        'RDW': 'RDW_CV',
-        'Abs_Neutrophil': 'Absolute_Neutrophil_Count',
-        'Abs_Lymphocyte': 'Absolute_Lymphocyte_Count'
-    }
-    
-    # Apply column renaming if needed
-    df = df.rename(columns=COLUMN_MAPPING)
-    
-    # 2. Extract Target
+    # 1. Extract Target
     y = df['Health_Status']
     
-    # 3. Extract ONLY Medical Features (Filter out Age, Gender, etc.)
-    available_features = [f for f in MEDICAL_FEATURES if f in df.columns]
-    missing_features = [f for f in MEDICAL_FEATURES if f not in df.columns]
-    
-    if missing_features:
-        print(f"   ⚠️ Warning: Missing features in dataset: {missing_features}")
-        print(f"   ✅ Using available features: {available_features}")
-    
-    X = df[available_features]
-    print(f"   - Selected {len(available_features)} medical features (excluded Age, Gender, etc.)")
+    # 2. Extract ALL Medical Features (Dataset already filtered - no personal data)
+    X = df.drop(columns=['Health_Status'])
+    print(f"   - Using {len(X.columns)} medical features (auto-detected from dataset)")
+    print(f"   - Feature categories: CBC, LFT, KFT, Lipid, Sugar, Thyroid, Vitamins, Inflammatory")
 
+    # 3. Handle any missing values (imputation)
+    from sklearn.impute import SimpleImputer
+    imputer = SimpleImputer(strategy='median')
+    X_imputed = pd.DataFrame(imputer.fit_transform(X), columns=X.columns)
+    
     # 4. Encoding Target
     le_target = LabelEncoder()
     y_encoded = le_target.fit_transform(y)
@@ -90,12 +66,12 @@ def load_and_preprocess():
 
     # 5. Normalization (MinMax: 0-1 range for better accuracy)
     scaler = MinMaxScaler()
-    X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
+    X_scaled = pd.DataFrame(scaler.fit_transform(X_imputed), columns=X.columns)
     print(f"   - Normalized all {len(X.columns)} features to [0, 1] range")
     
-    return X_scaled, y_encoded, le_target, X.columns, scaler
+    return X_scaled, y_encoded, le_target, X.columns, scaler, imputer
 
-def train_and_eval(X, y, le_target, feature_names, scaler):
+def train_and_eval(X, y, le_target, feature_names, scaler, imputer):
     print("\n🧠 Training & Tuning Models...")
     
     # Split for final validation
@@ -202,6 +178,7 @@ def train_and_eval(X, y, le_target, feature_names, scaler):
     artifact = {
         'model': best_model,
         'scaler': scaler,
+        'imputer': imputer,
         'le_target': le_target,
         'feature_names': feature_names
     }
@@ -220,7 +197,7 @@ def train_and_eval(X, y, le_target, feature_names, scaler):
 
 if __name__ == "__main__":
     try:
-        X_scaled, y_encoded, le_target, feature_names, scaler = load_and_preprocess()
-        train_and_eval(X_scaled, y_encoded, le_target, feature_names, scaler)
+        X_scaled, y_encoded, le_target, feature_names, scaler, imputer = load_and_preprocess()
+        train_and_eval(X_scaled, y_encoded, le_target, feature_names, scaler, imputer)
     except Exception as e:
         print(f"❌ Error: {e}")

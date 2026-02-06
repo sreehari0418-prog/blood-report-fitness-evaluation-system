@@ -4,8 +4,21 @@ import os
 import werkzeug
 from extract import extract_data
 
+# Import enhanced OCR service
+try:
+    from ocr_service import create_ocr_endpoint
+    HAS_OCR_SERVICE = True
+except ImportError as e:
+    print(f"⚠️ OCR service not available: {e}")
+    HAS_OCR_SERVICE = False
+
 app = Flask(__name__)
 CORS(app) # Enable Cross-Origin Resource Sharing for React
+
+# Register OCR endpoint if available
+if HAS_OCR_SERVICE:
+    app = create_ocr_endpoint(app)
+    print("✅ OCR endpoint registered at /ocr")
 
 UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
