@@ -296,13 +296,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             date: new Date().toLocaleDateString(),
             values: extractedValues,
             risks: ruleBasedRisks,  // PRIMARY: Detailed disease predictions
-            mlPredictions: mlAssessment ? [{
-                disease: "AI Health Score",
-                warning: `ML Assessment: ${mlAssessment.prediction}`,
-                probability: mlAssessment.confidence,
-                isDetected: mlAssessment.prediction !== 'Normal',
-                isSupplementary: true  // Flag to render differently
-            }] : []
+            // mlPredictions: Removed for UI clarity (Backround demo only)
+            mlPredictions: []
         });
 
         setIsLoading(false);
