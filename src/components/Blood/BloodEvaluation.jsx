@@ -203,32 +203,55 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     const numberMatches = cleanNumbersRow.match(/(\d+\.?\d*)/g);
 
                     if (numberMatches) {
-                        // Find the number that makes the most sense (Sanity Check)
-                        const validNumber = numberMatches.find(numStr => {
+                        let bestMatchValue = null;
+
+                        // Iterate through potential numbers to find a valid one
+                        // We use a for-loop instead of .find() so we can CAPTURE the corrected value
+                        for (const numStr of numberMatches) {
                             let val = parseFloat(numStr);
-                            if (isNaN(val)) return false;
+                            if (isNaN(val)) continue;
 
-                            // Filter out typical non-results
-                            if (val > 1900 && val < 2100 && paramKey !== 'total_count') return false; // Possible Year
-                            if (val === 0 && paramKey !== 'basophil') return false; // Usually 0 is rare except basophils
+                            // Filter out typical non-results (Years, etc)
+                            if (val > 1900 && val < 2100 && paramKey !== 'total_count') continue;
+                            if (val === 0 && paramKey !== 'basophil') continue;
 
-                            // Check Medical Range Validity (if available)
+                            // Check Medical Range Validity & Auto-Correct
                             const range = MEDICAL_RANGES[paramKey];
                             if (range) {
-                                // Fix "Missed Dot" error (e.g. 53 -> 5.3) - Automatic Scaling
-                                if (val > range.max * 5) val = val / 10;
-                                if (val > range.max * 5) val = val / 10; // Twice for 100x
+                                // 1. Fix "Missing Dot" (e.g., 52 -> 5.2 for RBC)
+                                // If value is way too high (>5x max), try dividing by 10
+                                if (val > range.max * 5) {
+                                    val = val / 10;
+                                }
+                                // If still too high (e.g. 520 -> 5.2), try 100
+                                if (val > range.max * 5) {
+                                    val = val / 10;
+                                }
 
-                                // Relaxed bounds for acceptance (0.1x to 10x of range)
+                                // 2. Fix "Extra Dot" or Low Value (e.g. 0.52 -> 5.2)
+                                // If value is way too low (<0.1x min), try multiplying
+                                if (val < range.min * 0.1) {
+                                    val = val * 10;
+                                }
+
+                                // Check if the (possibly corrected) value is reasonable
+                                // Relaxed bounds: 0.1x to 10x of expected range
                                 const minBound = range.min * 0.1;
                                 const maxBound = range.max * 10;
-                                return val >= minBound && val <= maxBound;
-                            }
-                            return true; // No range = accept
-                        });
 
-                        if (validNumber) {
-                            extractedValues[paramKey] = parseFloat(validNumber);
+                                if (val >= minBound && val <= maxBound) {
+                                    bestMatchValue = val; // Capture the CORRECTED value
+                                    break; // Found it!
+                                }
+                            } else {
+                                // No range defined, accept the first valid-looking number
+                                bestMatchValue = val;
+                                break;
+                            }
+                        }
+
+                        if (bestMatchValue !== null) {
+                            extractedValues[paramKey] = bestMatchValue;
                         }
                     }
                 }
