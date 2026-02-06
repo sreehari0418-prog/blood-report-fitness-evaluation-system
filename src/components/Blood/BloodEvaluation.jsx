@@ -238,13 +238,13 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     };
 
     const finishAnalysis = async (extractedValues, patientMeta = { Age: 30, Gender: 'M' }) => {
-        // 1. Rule-based Risk
+        // 1. Primary: Rule-based Diagnosis (More accurate & specific)
         const ruleBasedRisks = generateDiseasePredictions(extractedValues);
 
-        // 2. Advanced ML Prediction (Python Backend)
-        let mlPredictions = [];
+        // 2. Background: ML Model (for demonstration to teachers)
+        let mlAssessment = null;
         try {
-            console.log("🧠 calling Advanced ML Model...");
+            console.log("🧠 Running ML Model in background (for demo purposes)...");
             // Send ONLY 16 medical CBC features (no Age/Gender)
             const mlPayload = {
                 Total_Leukocyte_Count: extractedValues['total_count'] || 0,
@@ -274,23 +274,30 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             if (response.ok) {
                 const result = await response.json();
                 if (result.status === 'success') {
-                    mlPredictions.push({
-                        disease: "Overall Health Status",
-                        warning: `ML Assessment: ${result.prediction} (${result.confidence} Confidence)`,
-                        probability: result.confidence,
-                        isDetected: result.prediction !== 'Normal'
-                    });
+                    mlAssessment = {
+                        prediction: result.prediction,
+                        confidence: result.confidence
+                    };
+                    console.log(`✓ ML Background Assessment: ${result.prediction} (${result.confidence})`);
                 }
             }
         } catch (err) {
-            console.error("ML Error:", err);
+            console.warn("ML model unavailable (running offline mode):", err);
+            // Silently fail - rule-based system still works
         }
 
+        // Use rule-based as primary, ML as supplementary metadata
         analyzeReport({
             date: new Date().toLocaleDateString(),
             values: extractedValues,
-            risks: ruleBasedRisks,
-            mlPredictions: mlPredictions
+            risks: ruleBasedRisks,  // PRIMARY: Detailed disease predictions
+            mlPredictions: mlAssessment ? [{
+                disease: "AI Health Score",
+                warning: `ML Assessment: ${mlAssessment.prediction}`,
+                probability: mlAssessment.confidence,
+                isDetected: mlAssessment.prediction !== 'Normal',
+                isSupplementary: true  // Flag to render differently
+            }] : []
         });
 
         setIsLoading(false);
