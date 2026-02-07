@@ -318,9 +318,16 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         analyzeReport({
             date: new Date().toLocaleDateString(),
             values: extractedValues,
-            risks: ruleBasedRisks,  // PRIMARY: Detailed disease predictions
-            // mlPredictions: Removed for UI clarity (Backround demo only)
-            mlPredictions: []
+            risks: ruleBasedRisks,  // Expert Mode Results (Always calculated)
+
+            // Conditional: Only show ML for "Advanced ML" mode
+            mlPredictions: (mlAssessment && analysisMode === 'ml') ? [{
+                disease: "AI Health Score",
+                warning: `ML Assessment: ${mlAssessment.prediction} (${mlAssessment.confidence} Confidence)`,
+                probability: mlAssessment.confidence,
+                isDetected: mlAssessment.prediction !== 'Normal',
+                isSupplementary: false // Main Feature in ML Mode
+            }] : []
         });
 
         setIsLoading(false);
@@ -459,6 +466,9 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         }
     };
 
+    // NEW: Analysis Mode State
+    const [analysisMode, setAnalysisMode] = useState('expert'); // 'expert' (Rule-Based) or 'ml' (Advanced ML)
+
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -530,7 +540,34 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
 
             {!analyzedData ? (
                 <div className="main-content">
+                    {/* NEW: Analysis Mode Toggle */}
+                    <div className="mode-toggle-container">
+                        <label className="mode-label">Analysis Mode:</label>
+                        <div className="mode-switch">
+                            <button
+                                className={`mode-btn ${analysisMode === 'expert' ? 'active' : ''}`}
+                                onClick={() => setAnalysisMode('expert')}
+                            >
+                                🩺 Expert (Rules)
+                            </button>
+                            <button
+                                className={`mode-btn ${analysisMode === 'ml' ? 'active' : ''}`}
+                                onClick={() => setAnalysisMode('ml')}
+                            >
+                                🧠 Advanced ML
+                            </button>
+                        </div>
+                        <p className="mode-desc">
+                            {analysisMode === 'expert'
+                                ? "Rule-based expert system. Specific & verified diagnosis."
+                                : "Experimental AI model. Predicts overall health risk."}
+                        </p>
+                    </div>
+
+                    <div className="divider"></div>
+
                     {/* Manual Entry Section */}
+                    {/* ... (rest of manual entry) ... */}
 
                     <div className="card manual-card">
                         <h3>Quick Check</h3>
