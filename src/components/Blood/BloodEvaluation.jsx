@@ -22,6 +22,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [manualParam, setManualParam] = useState('hemoglobin');
     const [manualValue, setManualValue] = useState('');
     const [manualResult, setManualResult] = useState(null);
+    const [mlError, setMlError] = useState(null); // NEW: ML Error State
 
     // Image Enhancement Toggle
     const [enableLens, setEnableLens] = useState(false); // Toggle for Digital Lens
@@ -325,7 +326,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     Absolute_Lymphocyte_Count: extractedValues['absolute_lymphocyte_count'] || 0
                 };
 
-                const response = await fetch('http://localhost:5000/predict', {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(mlPayload)
@@ -343,7 +344,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 }
             } catch (err) {
                 console.warn("ML Service unavailable:", err);
-                alert("ML Service is offline. Please check backend.");
+                setMlError("⚠️ ML Service Offline. Please start the backend server.");
             }
         }
 
@@ -601,6 +602,11 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                                 ? "Rule-based expert system. Specific & verified diagnosis."
                                 : "Experimental AI model. Predicts overall health risk."}
                         </p>
+                        {mlError && analysisMode === 'ml' && (
+                            <div className="error-banner" style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '8px', marginTop: '10px', fontSize: '13px', textAlign: 'center' }}>
+                                {mlError}
+                            </div>
+                        )}
                     </div>
 
                     <div className="divider"></div>
