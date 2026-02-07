@@ -5,8 +5,8 @@ export const KEYWORD_MAP = {
     // 1. Hematology (Extended)
     'hemoglobin': ['hemoglobin', 'haemoglobin', 'hb', 'hgb'],
     'rbc_count': ['rbc count', 'total rbc', 'red blood cells', 'erythrocyte count'],
-    'total_count': ['total leucocyte count', 'tlc', 'wbc count', 'white blood cells', 'total count'],
-    'platelet_count': ['platelet count', 'platelet', 'plt'],
+    'total_count': ['total leucocyte count', 'tlc', 'wbc count', 'white blood cells', 'total count', 'leukocyte count', 'white cells', 'total wbc', 't.l.c'],
+    'platelet_count': ['platelet count', 'platelet', 'plt', 'thrombocyte count', 'platelets'],
     'hematocrit': ['hematocrit', 'hct', 'pcv', 'packed cell volume'],
     'mcv': ['mcv', 'mean corpuscular volume'],
     'mch': ['mch', 'mean corpuscular hemoglobin'],

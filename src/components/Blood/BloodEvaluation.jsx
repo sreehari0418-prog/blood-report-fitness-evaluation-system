@@ -192,13 +192,25 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     // This handles "14.5 Hemoglobin" AND "Hemoglobin 14.5" layouts
 
                     // Advanced Number Cleaning:
-                    // 1. Replace 'O'/'o' with '0' inside numbers
-                    // 2. Fix '..' to '.'
-                    // 3. Replace ',' with '.' (European)
+                    // 1. Fix spaces around dots: "14 . 5" -> "14.5"
                     let cleanNumbersRow = lowerRow
+                        .replace(/(\d)\s+[\.,]\s+(\d)/g, '$1.$2') // "14 . 5"
+                        .replace(/(\d)\s+[\.,](?=\d)/g, '$1.')    // "14 .5"
+                        .replace(/(?<=\d)[\.,]\s+(\d)/g, '.$1');   // "14. 5"
+
+                    // 2. Context-Aware Comma Handling
+                    // For large counts (WBC, Platelets), comma is thousands separator (remove it)
+                    // For others (Hemoglobin), comma is likely decimal (replace with dot)
+                    if (['total_count', 'platelet_count', 'absolute_neutrophil_count'].includes(paramKey)) {
+                        cleanNumbersRow = cleanNumbersRow.replace(/,/g, '');
+                    } else {
+                        cleanNumbersRow = cleanNumbersRow.replace(/,/g, '.');
+                    }
+
+                    // 3. Common OCR Fixes
+                    cleanNumbersRow = cleanNumbersRow
                         .replace(/[oO](?=\d)/g, '0').replace(/(?<=\d)[oO]/g, '0')
-                        .replace(/\.\./g, '.')
-                        .replace(/,/g, '.');
+                        .replace(/\.\./g, '.');
 
                     // Find all numbers
                     const numberMatches = cleanNumbersRow.match(/(\d+\.?\d*)/g);
@@ -219,36 +231,32 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                             // Check Medical Range Validity & Auto-Correct
                             const range = MEDICAL_RANGES[paramKey];
                             if (range) {
-                                // 1. Fix "Missing Dot" (e.g., 52 -> 5.2 for RBC)
-                                // If value is way too high (>5x max), try dividing by 10
-                                if (val > range.max * 5) {
-                                    val = val / 10;
-                                }
-                                // If still too high (e.g. 520 -> 5.2), try 100
-                                if (val > range.max * 5) {
-                                    val = val / 10;
+                                // Smart Scaling: Try powers of 10 to match units (e.g., 4.5 -> 4500, or 250000 -> 2.5)
+                                const scales = [1, 10, 100, 1000, 0.1, 0.01, 0.001, 0.0001];
+                                let foundValidScale = false;
+
+                                for (let scale of scales) {
+                                    const scaledVal = val * scale;
+
+                                    // Check if scaled value is within a "Reasonable" deviation from the medical range
+                                    // (Allowing 50% buffer below min and 50% above max for detecting abnormal-but-valid values)
+                                    // e.g. If range is 4000-11000, accept 2000-16500 as "valid detection"
+                                    if (scaledVal >= range.min * 0.2 && scaledVal <= range.max * 3.0) {
+                                        bestMatchValue = scaledVal;
+                                        foundValidScale = true;
+                                        break; // Found the best fit!
+                                    }
                                 }
 
-                                // 2. Fix "Extra Dot" or Low Value (e.g. 0.52 -> 5.2)
-                                // If value is way too low (<0.1x min), try multiplying
-                                if (val < range.min * 0.1) {
-                                    val = val * 10;
-                                }
-
-                                // Check if the (possibly corrected) value is reasonable
-                                // Relaxed bounds: 0.1x to 10x of expected range
-                                const minBound = range.min * 0.1;
-                                const maxBound = range.max * 10;
-
-                                if (val >= minBound && val <= maxBound) {
-                                    bestMatchValue = val; // Capture the CORRECTED value
-                                    break; // Found it!
+                                if (foundValidScale) {
+                                    break; // Stop looking at other numbers in this row
                                 }
                             } else {
                                 // No range defined, accept the first valid-looking number
                                 bestMatchValue = val;
                                 break;
                             }
+
                         }
 
                         if (bestMatchValue !== null) {
