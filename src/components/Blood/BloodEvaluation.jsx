@@ -265,70 +265,109 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         finishAnalysis(extractedValues, patientMeta);
     };
 
-    const finishAnalysis = async (extractedValues, patientMeta = { Age: 30, Gender: 'M' }) => {
-        // 1. Primary: Rule-based Diagnosis (More accurate & specific)
-        const ruleBasedRisks = generateDiseasePredictions(extractedValues);
-
-        // 2. Background: ML Model (for demonstration to teachers)
-        let mlAssessment = null;
+    // --- FIRESTORE LOGGING ---
+    const saveToFirestore = async (analysisResult) => {
         try {
-            console.log("🧠 Running ML Model in background (for demo purposes)...");
-            // Send ONLY 16 medical CBC features (no Age/Gender)
-            const mlPayload = {
-                Total_Leukocyte_Count: extractedValues['total_count'] || 0,
-                RBC_Count: extractedValues['rbc_count'] || 0,
-                Hemoglobin: extractedValues['hemoglobin'] || 0,
-                Hematocrit: extractedValues['hematocrit'] || 0,
-                MCV: extractedValues['mcv'] || 0,
-                MCH: extractedValues['mch'] || 0,
-                MCHC: extractedValues['mchc'] || 0,
-                RDW_CV: extractedValues['rdw'] || 0,
-                Platelet_Count: extractedValues['platelet_count'] || 0,
-                Neutrophils: extractedValues['neutrophil'] || 0,
-                Lymphocytes: extractedValues['lymphocyte'] || 0,
-                Monocytes: extractedValues['monocyte'] || 0,
-                Eosinophils: extractedValues['eosinophil'] || 0,
-                Basophils: extractedValues['basophil'] || 0,
-                Absolute_Neutrophil_Count: extractedValues['absolute_neutrophil_count'] || 0,
-                Absolute_Lymphocyte_Count: extractedValues['absolute_lymphocyte_count'] || 0
+            // Lazy load Firestore to avoid initialization race conditions
+            const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+            const { db } = await import('../../utils/firebase');
+
+            const reportData = {
+                userId: user ? user.uid : 'anonymous',
+                userEmail: user ? user.email : 'anonymous',
+                timestamp: serverTimestamp(),
+                mode: analysisMode,
+                values: analysisResult.values,
+                risks: analysisResult.risks || [],
+                mlPredictions: analysisResult.mlPredictions || [],
+                summary: analysisMode === 'expert' ? 'Expert Rule Analysis' : 'ML Model Analysis'
             };
 
-            const response = await fetch('http://localhost:5000/predict', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(mlPayload)
-            });
+            await addDoc(collection(db, 'reports'), reportData);
+            console.log("✅ Report saved to Firestore");
+        } catch (error) {
+            console.error("❌ Error saving to Firestore:", error);
+        }
+    };
 
-            if (response.ok) {
-                const result = await response.json();
-                if (result.status === 'success') {
-                    mlAssessment = {
-                        prediction: result.prediction,
-                        confidence: result.confidence
-                    };
-                    console.log(`✓ ML Background Assessment: ${result.prediction} (${result.confidence})`);
-                }
-            }
-        } catch (err) {
-            console.warn("ML model unavailable (running offline mode):", err);
-            // Silently fail - rule-based system still works
+    const finishAnalysis = async (extractedValues, patientMeta = { Age: 30, Gender: 'M' }) => {
+        let ruleBasedRisks = [];
+        let mlAssessment = null;
+
+        // MODE 1: EXPERT (Rule-Based Only)
+        if (analysisMode === 'expert') {
+            console.log("🩺 Running Expert Mode (Rule-Based System)...");
+            ruleBasedRisks = generateDiseasePredictions(extractedValues);
+            // ML is strictly SKIPPED in Expert Mode per user request ("should not overlap")
         }
 
-        // Use rule-based as primary, ML as supplementary metadata
-        analyzeReport({
+        // MODE 2: ADVANCED ML (Model Only)
+        else if (analysisMode === 'ml') {
+            try {
+                console.log("🧠 Running Advanced ML Mode...");
+                // Send ONLY 16 medical CBC features
+                const mlPayload = {
+                    Total_Leukocyte_Count: extractedValues['total_count'] || 0,
+                    RBC_Count: extractedValues['rbc_count'] || 0,
+                    Hemoglobin: extractedValues['hemoglobin'] || 0,
+                    Hematocrit: extractedValues['hematocrit'] || 0,
+                    MCV: extractedValues['mcv'] || 0,
+                    MCH: extractedValues['mch'] || 0,
+                    MCHC: extractedValues['mchc'] || 0,
+                    RDW_CV: extractedValues['rdw'] || 0,
+                    Platelet_Count: extractedValues['platelet_count'] || 0,
+                    Neutrophils: extractedValues['neutrophil'] || 0,
+                    Lymphocytes: extractedValues['lymphocyte'] || 0,
+                    Monocytes: extractedValues['monocyte'] || 0,
+                    Eosinophils: extractedValues['eosinophil'] || 0,
+                    Basophils: extractedValues['basophil'] || 0,
+                    Absolute_Neutrophil_Count: extractedValues['absolute_neutrophil_count'] || 0,
+                    Absolute_Lymphocyte_Count: extractedValues['absolute_lymphocyte_count'] || 0
+                };
+
+                const response = await fetch('http://localhost:5000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(mlPayload)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.status === 'success') {
+                        mlAssessment = {
+                            prediction: result.prediction,
+                            confidence: result.confidence
+                        };
+                        console.log(`✓ ML Assessment: ${result.prediction}`);
+                    }
+                }
+            } catch (err) {
+                console.warn("ML Service unavailable:", err);
+                alert("ML Service is offline. Please check backend.");
+            }
+        }
+
+        const finalRisks = analysisMode === 'expert' ? ruleBasedRisks : [];
+        const finalML = (analysisMode === 'ml' && mlAssessment) ? [{
+            disease: "AI Health Score",
+            warning: `ML Assessment: ${mlAssessment.prediction} (${mlAssessment.confidence} Confidence)`,
+            probability: mlAssessment.confidence,
+            isDetected: mlAssessment.prediction !== 'Normal',
+            isSupplementary: false
+        }] : [];
+
+        // Combine Results
+        const resultPayload = {
             date: new Date().toLocaleDateString(),
             values: extractedValues,
-            risks: ruleBasedRisks,  // Expert Mode Results (Always calculated)
+            risks: finalRisks,
+            mlPredictions: finalML
+        };
 
-            // Conditional: Only show ML for "Advanced ML" mode
-            mlPredictions: (mlAssessment && analysisMode === 'ml') ? [{
-                disease: "AI Health Score",
-                warning: `ML Assessment: ${mlAssessment.prediction} (${mlAssessment.confidence} Confidence)`,
-                probability: mlAssessment.confidence,
-                isDetected: mlAssessment.prediction !== 'Normal',
-                isSupplementary: false // Main Feature in ML Mode
-            }] : []
-        });
+        analyzeReport(resultPayload);
+
+        // Save to Database (Both modes - User Request: "both should connect to firebase databse")
+        await saveToFirestore(resultPayload);
 
         setIsLoading(false);
         setStatusText('');
@@ -567,7 +606,6 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     <div className="divider"></div>
 
                     {/* Manual Entry Section */}
-                    {/* ... (rest of manual entry) ... */}
 
                     <div className="card manual-card">
                         <h3>Quick Check</h3>
