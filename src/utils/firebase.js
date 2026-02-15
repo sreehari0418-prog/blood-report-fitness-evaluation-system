@@ -7,12 +7,13 @@ import { getStorage } from 'firebase/storage';
 // Firebase project configuration
 // TODO: User needs to replace these with actual Firebase project credentials
 const firebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "REPLACE_WITH_YOUR_API_KEY",
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789:web:abc123"
+    apiKey: "AIzaSyCRNLyBkav2ZbMNj9MakHKDdSzeabgFSTI",
+    authDomain: "blood-fitness-app.firebaseapp.com",
+    projectId: "blood-fitness-app",
+    storageBucket: "blood-fitness-app.firebasestorage.app",
+    messagingSenderId: "142443201042",
+    appId: "1:142443201042:web:a962a38c46816d632b8ecb",
+    measurementId: "G-QW6N5M6DKL"
 };
 
 // Initialize Firebase
