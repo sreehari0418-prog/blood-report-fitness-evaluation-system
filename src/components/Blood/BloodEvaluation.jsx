@@ -217,30 +217,15 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     }
 
                     // 3. SMART FIX: Remove Reference Ranges/Intervals BEFORE extracting numbers
-                    // BUT: Only remove if they look like ranges (multiple numbers separated by dash)
-                    // Strategy: Remove patterns with BOTH numbers visible (e.g., "13.2 - 16.6")
-                    // This preserves standalone results like "7.2" or "4.5"
-                    const rangePatterns = [
-                        /(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/g,        // Match "13.2 - 16.6" or "4-11" (requires both numbers)
-                        /(\d+\.?\d*)\s+to\s+(\d+\.?\d*)/gi,      // Match "14 to 16"
-                        /[<>]\s*\d+(\.\d+)?/g                    // "< 5" or "> 10"
-                    ];
-
+                    // Strategy: Only remove if it's a clear range pattern (number-dash-number)
                     let cleanRowForExtraction = cleanNumbersRow;
 
-                    // Smart Range Removal: Only remove if it's clearly a range (has dash with numbers on both sides)
-                    rangePatterns.forEach(pattern => {
-                        cleanRowForExtraction = cleanRowForExtraction.replace(pattern, (match) => {
-                            // If match contains a dash between two numbers, it's a range -> remove
-                            // Otherwise, keep it
-                            if (match.includes('-') && /\d/.test(match.split('-')[0]) && /\d/.test(match.split('-')[1])) {
-                                return '   '; // Remove range
-                            }
-                            return match; // Keep standalone number
-                        });
-                    });
+                    // Remove patterns like "13.2 - 16.6" or "4-11" but NOT standalone numbers
+                    cleanRowForExtraction = cleanRowForExtraction.replace(/(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/g, '   ');
+                    cleanRowForExtraction = cleanRowForExtraction.replace(/(\d+\.?\d*)\s+to\s+(\d+\.?\d*)/gi, '   ');
+                    cleanRowForExtraction = cleanRowForExtraction.replace(/[<>]\s*\d+(\.\d+)?/g, '   ');
 
-                    // 4. Common OCR Fixes on what's left
+                    // 4. Common OCR Fixes
                     cleanRowForExtraction = cleanRowForExtraction
                         .replace(/[oO](?=\d)/g, '0').replace(/(?<=\d)[oO]/g, '0')
                         .replace(/\.\./g, '.');
@@ -251,53 +236,63 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     if (numberMatches) {
                         let bestMatchValue = null;
 
-                        // Iterate through potential numbers to find a valid one
                         for (const numStr of numberMatches) {
                             let val = parseFloat(numStr);
                             if (isNaN(val)) continue;
 
-                            // Filter out typical non-results (Years, etc)
+                            // Filter out years and obvious non-results
                             if (val > 1900 && val < 2100 && currentKey !== 'total_count') continue;
                             if (val === 0 && currentKey !== 'basophil') continue;
 
-                            // Check Medical Range Validity & Auto-Correct
                             const range = MEDICAL_RANGES[currentKey];
                             if (range) {
-                                // CRITICAL FIX: Disable auto-scaling for parameters that don't need it
-                                // Platelets are reported in thousands (e.g., 250 = 250,000/µL)
-                                // WBC/RBC use scientific notation in reports (handled by units)
-                                const noScaleParams = ['platelet_count', 'total_count', 'rbc_count', 'hemoglobin', 'hematocrit'];
+                                // CRITICAL FIX: Smart scaling with better logic
+                                // Try different scales and pick the one that fits best
+                                const scales = [1, 10, 100, 1000, 0.1, 0.01, 0.001];
+                                let bestFit = null;
+                                let bestDeviation = Infinity;
 
-                                if (noScaleParams.includes(currentKey)) {
-                                    // Direct range check without scaling
-                                    if (val >= range.min * 0.2 && val <= range.max * 3.0) {
-                                        bestMatchValue = val;
-                                        break;
-                                    }
-                                } else {
-                                    // Smart Scaling for other parameters
-                                    const scales = [1, 10, 100, 1000, 0.1, 0.01, 0.001, 0.0001];
-                                    let foundValidScale = false;
+                                for (let scale of scales) {
+                                    const scaledVal = val * scale;
 
-                                    for (let scale of scales) {
-                                        const scaledVal = val * scale;
-                                        if (scaledVal >= range.min * 0.2 && scaledVal <= range.max * 3.0) {
-                                            bestMatchValue = scaledVal;
-                                            foundValidScale = true;
-                                            break;
+                                    // Calculate how well this fits in the range
+                                    // Perfect fit = value is within range
+                                    // Acceptable fit = within 3x the range (for abnormal values)
+                                    const minAcceptable = range.min * 0.2; // Allow 80% below
+                                    const maxAcceptable = range.max * 3.0; // Allow 3x above
+
+                                    if (scaledVal >= minAcceptable && scaledVal <= maxAcceptable) {
+                                        // Calculate deviation from ideal range
+                                        let deviation;
+                                        if (scaledVal < range.min) {
+                                            deviation = range.min - scaledVal;
+                                        } else if (scaledVal > range.max) {
+                                            deviation = scaledVal - range.max;
+                                        } else {
+                                            deviation = 0; // Perfect fit!
+                                        }
+
+                                        // Prefer scale=1 if it fits (no unnecessary scaling)
+                                        if (scale === 1) {
+                                            deviation *= 0.9; // Give slight preference to unscaled
+                                        }
+
+                                        if (deviation < bestDeviation) {
+                                            bestDeviation = deviation;
+                                            bestFit = scaledVal;
                                         }
                                     }
+                                }
 
-                                    if (foundValidScale) {
-                                        break;
-                                    }
+                                if (bestFit !== null) {
+                                    bestMatchValue = bestFit;
+                                    break; // Found a good match
                                 }
                             } else {
-                                // No range defined, accept the first valid-looking number
+                                // No range defined, accept the first valid number
                                 bestMatchValue = val;
                                 break;
                             }
-
                         }
 
                         if (bestMatchValue !== null) {
