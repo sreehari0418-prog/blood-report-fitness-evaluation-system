@@ -30,6 +30,7 @@ export const KEYWORD_MAP = {
     // 2. Kidney
     'bun': ['blood urea nitrogen', 'bun'],
     'creatinine': ['serum creatinine', 'creatinine'],
+    'urea': ['blood urea', 'urea', 'serum urea'], // Pure Urea
     'uric_acid': ['serum uric acid', 'uric acid'],
     'bun_creatinine_ratio': ['bun/creatinine ratio', 'bun/creat ratio'],
     'egfr': ['egfr', 'estimated glomerular filtration rate'],
@@ -138,6 +139,7 @@ export const MEDICAL_RANGES = {
     // 2. Kidney
     'bun': { min: 7, max: 20, unit: 'mg/dL', foods: ['Low Protein', 'Water'], impact: { high: "Kidney load high. Hydrate." } },
     'creatinine': { min: 0.6, max: 1.3, unit: 'mg/dL', foods: ['Less Red Meat', 'Cucumber'], impact: { high: "Kidney stress. Avoid creatine supplements." } },
+    'urea': { min: 15, max: 50, unit: 'mg/dL', foods: ['Low Protein', 'Water'], impact: { high: "High protein breakdown or kidney issue." } },
     'uric_acid': { min: 3.5, max: 7.2, unit: 'mg/dL', foods: ['Cherries', 'No Alcohol'], impact: { high: "Gout risk. Avoid high-impact jumping." } },
     'egfr': { min: 90, max: 150, unit: 'mL/min', foods: [], impact: { low: "Kidney functionality concern. Consult doctor." } },
 

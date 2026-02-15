@@ -9,7 +9,8 @@ from datetime import datetime, timedelta
 
 # Initialize Flask App
 app = Flask(__name__)
-CORS(app)
+# Allow all origins (for GitHub Pages + Render)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configuration
 SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'your-secret-key-change-in-production')

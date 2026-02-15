@@ -207,13 +207,26 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                         cleanNumbersRow = cleanNumbersRow.replace(/,/g, '.');
                     }
 
-                    // 3. Common OCR Fixes
-                    cleanNumbersRow = cleanNumbersRow
+                    // 3. SMART FIX: Remove Reference Ranges/Intervals BEFORE extracting numbers
+                    // Example: "13.5 - 17.5" or "10-40" should be removed so they aren't mistaken for results
+                    const rangePatterns = [
+                        /\d+(\.\d+)?\s*-\s*\d+(\.\d+)?/g,       // 14-16
+                        /\d+(\.\d+)?\s*to\s*\d+(\.\d+)?/gi,     // 14 to 16
+                        /[<>]\s*\d+(\.\d+)?/g                   // < 5 or > 10
+                    ];
+
+                    let cleanRowForExtraction = cleanNumbersRow;
+                    rangePatterns.forEach(pattern => {
+                        cleanRowForExtraction = cleanRowForExtraction.replace(pattern, '   '); // Replace with space to keep separation
+                    });
+
+                    // 4. Common OCR Fixes on what's left
+                    cleanRowForExtraction = cleanRowForExtraction
                         .replace(/[oO](?=\d)/g, '0').replace(/(?<=\d)[oO]/g, '0')
                         .replace(/\.\./g, '.');
 
-                    // Find all numbers
-                    const numberMatches = cleanNumbersRow.match(/(\d+\.?\d*)/g);
+                    // Find all numbers in the cleaned row
+                    const numberMatches = cleanRowForExtraction.match(/(\d+\.?\d*)/g);
 
                     if (numberMatches) {
                         let bestMatchValue = null;
