@@ -334,7 +334,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     Absolute_Lymphocyte_Count: extractedValues['absolute_lymphocyte_count'] || 0
                 };
 
-                const response = await fetch('http://127.0.0.1:5001/predict', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/predict`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(mlPayload)
@@ -458,8 +458,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     const formData = new FormData();
                     formData.append('image', file);
 
-                    // Use backend running on port 5001
-                    const response = await fetch('http://localhost:5001/ocr', {
+                    // Use configured backend URL (Local or Render)
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/ocr`, {
                         method: 'POST',
                         body: formData
                     });
