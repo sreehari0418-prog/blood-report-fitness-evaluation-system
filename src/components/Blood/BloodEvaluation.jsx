@@ -18,10 +18,9 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [statusText, setStatusText] = useState('');
 
-    // Manual Entry State
-    const [manualParam, setManualParam] = useState('hemoglobin');
-    const [manualValue, setManualValue] = useState('');
-    const [manualResult, setManualResult] = useState(null);
+    // Manual Scanner State (New Feature)
+    const [selectedParams, setSelectedParams] = useState([]);
+    const [manualValues, setManualValues] = useState({});
     const [mlError, setMlError] = useState(null); // NEW: ML Error State
 
     // Image Enhancement Toggle
@@ -622,19 +621,25 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                                 className={`mode-btn ${analysisMode === 'expert' ? 'active' : ''}`}
                                 onClick={() => setAnalysisMode('expert')}
                             >
-                                🩺 Expert (Rules)
+                                🩺 Expert
+                            </button>
+                            <button
+                                className={`mode-btn ${analysisMode === 'manual' ? 'active' : ''}`}
+                                onClick={() => setAnalysisMode('manual')}
+                            >
+                                ✍️ Manual
                             </button>
                             <button
                                 className={`mode-btn ${analysisMode === 'ml' ? 'active' : ''}`}
                                 onClick={() => setAnalysisMode('ml')}
                             >
-                                🧠 Advanced ML
+                                🧠 ML
                             </button>
                         </div>
                         <p className="mode-desc">
-                            {analysisMode === 'expert'
-                                ? "Rule-based expert system. Specific & verified diagnosis."
-                                : "Experimental AI model. Predicts overall health risk."}
+                            {analysisMode === 'expert' ? "Rule-based expert system. Specific & verified diagnosis." :
+                                analysisMode === 'manual' ? "Enter results manually. Select up to 20 parameters." :
+                                    "Experimental AI model. Predicts overall health risk."}
                         </p>
                         {mlError && analysisMode === 'ml' && (
                             <div className="error-banner" style={{ background: '#fee2e2', color: '#b91c1c', padding: '10px', borderRadius: '8px', marginTop: '10px', fontSize: '13px', textAlign: 'center' }}>
@@ -644,98 +649,138 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     </div>
 
                     <div className="divider"></div>
+                    {/* Manual Scanner Mode */}
+                    {analysisMode === 'manual' ? (
+                        <div className="card manual-scanner-card">
+                            <h3>📋 Manual Scanner</h3>
+                            <p className="sub-label">Select up to 20 parameters and enter values.</p>
 
-                    {/* Manual Entry Section */}
+                            <div className="param-counter" style={{ margin: '15px 0', padding: '10px', background: '#f0f9ff', borderRadius: '8px', textAlign: 'center', fontSize: '14px', fontWeight: '600', color: '#0369a1' }}>
+                                Selected: {selectedParams.length}/20
+                            </div>
 
-                    <div className="card manual-card">
-                        <h3>Quick Check</h3>
-                        <p className="sub-label">Enter a single value to check results instantly.</p>
-                        <form onSubmit={handleManualCheck} className="manual-form">
-                            <div className="row">
+                            {/* Parameter Selection */}
+                            <div className="param-select-row" style={{ marginBottom: '20px' }}>
                                 <select
                                     className="input-field"
-                                    value={manualParam}
-                                    onChange={(e) => { setManualParam(e.target.value); setManualResult(null); }}
+                                    onChange={(e) => {
+                                        const param = e.target.value;
+                                        if (param && !selectedParams.includes(param) && selectedParams.length < 20) {
+                                            setSelectedParams([...selectedParams, param]);
+                                            setManualValues({ ...manualValues, [param]: '' });
+                                        }
+                                        e.target.value = '';
+                                    }}
+                                    disabled={selectedParams.length >= 20}
+                                    style={{ width: '100%' }}
                                 >
-                                    {Object.keys(MEDICAL_RANGES).map(key => (
+                                    <option value="">+ Add Parameter ({50 - selectedParams.length} available)</option>
+                                    {Object.keys(MEDICAL_RANGES).filter(key => !selectedParams.includes(key)).map(key => (
                                         <option key={key} value={key}>
-                                            {key.replace(/_/g, ' ').toUpperCase()}
+                                            {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} ({MEDICAL_RANGES[key].unit})
                                         </option>
                                     ))}
                                 </select>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    className="input-field"
-                                    placeholder="Value"
-                                    value={manualValue}
-                                    onChange={(e) => setManualValue(e.target.value)}
-                                    required
-                                />
                             </div>
-                            <button type="submit" className="btn-primary small-btn">
-                                Check <Search size={16} />
-                            </button>
-                        </form>
 
-                        {manualResult && (
-                            <div className="manual-result fade-in">
-                                <div className={`result-badge ${manualResult.status.toLowerCase()}`}>
-                                    {manualResult.status}
+                            {/* Input Fields for Selected Parameters */}
+                            <div className="manual-inputs-grid" style={{ maxHeight: '400px', overflowY: 'auto', marginBottom: '20px' }}>
+                                {selectedParams.map(param => (
+                                    <div key={param} className="manual-input-row" style={{ display: 'flex', gap: '10px', marginBottom: '12px', alignItems: 'center' }}>
+                                        <label style={{ flex: '1', fontSize: '13px', fontWeight: '500' }}>
+                                            {param.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                                        </label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            className="input-field"
+                                            placeholder={`Enter ${MEDICAL_RANGES[param].unit}`}
+                                            value={manualValues[param] || ''}
+                                            onChange={(e) => setManualValues({ ...manualValues, [param]: e.target.value })}
+                                            style={{ flex: '0.6' }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedParams(selectedParams.filter(p => p !== param));
+                                                const newValues = { ...manualValues };
+                                                delete newValues[param];
+                                                setManualValues(newValues);
+                                            }}
+                                            style={{ background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '4px', padding: '6px 10px', cursor: 'pointer', fontSize: '12px' }}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Submit Button */}
+                            {selectedParams.length > 0 && (
+                                <button
+                                    className="btn-primary"
+                                    onClick={() => {
+                                        // Filter out empty values and convert to numbers
+                                        const extractedValues = {};
+                                        selectedParams.forEach(param => {
+                                            const val = parseFloat(manualValues[param]);
+                                            if (!isNaN(val)) {
+                                                extractedValues[param] = val;
+                                            }
+                                        });
+
+                                        if (Object.keys(extractedValues).length === 0) {
+                                            alert('Please enter at least one value.');
+                                            return;
+                                        }
+
+                                        // Call existing analysis logic
+                                        finishAnalysis(extractedValues, { Age: 30, Gender: 'M' });
+                                    }}
+                                    style={{ width: '100%' }}
+                                >
+                                    🔍 Analyze Health ({Object.values(manualValues).filter(v => v).length} values)
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <>
+                            {/* Upload Section (Hidden in Manual Mode) */}
+                            <div className="upload-card">
+                                <div className="icon-circle">
+                                    <Upload size={32} color="var(--color-primary)" />
                                 </div>
-                                <p className="result-text">
-                                    <strong>{manualResult.parameter.replace(/_/g, ' ').toUpperCase()}:</strong> {manualResult.value} {manualResult.unit}
-                                    <br />
-                                    <span className="text-muted">Normal: {manualResult.range}</span>
-                                </p>
-                                {manualResult.status !== 'Normal' && manualResult.foods.length > 0 && (
-                                    <div className="diet-tip">
-                                        <strong>Tip:</strong> Eat {manualResult.foods.join(', ')}
-                                    </div>
-                                )}
-                                {manualResult.fitnessImpact && (
-                                    <div className="fitness-tip">
-                                        <strong>Fitness Impact:</strong> {manualResult.fitnessImpact}
-                                    </div>
-                                )}
+                                <h3>Upload Report Image</h3>
+                                <p>Take a clear photo of your report. AI will scan for values.</p>
+
+                                {/* Digital Lens Toggle */}
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label className="checkbox-container">
+                                        <input
+                                            type="checkbox"
+                                            checked={enableLens}
+                                            onChange={(e) => setEnableLens(e.target.checked)}
+                                        />
+                                        <span className="checkmark"></span>
+                                        Enable Digital Lens (Enhance Image)
+                                    </label>
+                                </div>
+
+                                <label className="btn-secondary upload-btn">
+                                    {isLoading ? (statusText || 'Scanning...') : 'Select Image (JPG/PNG)'}
+                                    <input
+                                        type="file"
+                                        accept="image/*,application/pdf"
+                                        hidden
+                                        onChange={handleFileUpload}
+                                        disabled={isLoading}
+                                    />
+                                </label>
                             </div>
-                        )}
-                    </div>
+                        </>
+                    )}
 
-                    <div className="divider">OR</div>
-
-                    {/* Upload Section */}
-                    <div className="upload-card">
-                        <div className="icon-circle">
-                            <Upload size={32} color="var(--color-primary)" />
-                        </div>
-                        <h3>Upload Report Image</h3>
-                        <p>Take a clear photo of your report. AI will scan for values.</p>
-
-                        {/* Digital Lens Toggle */}
-                        <div style={{ marginBottom: '15px' }}>
-                            <label className="checkbox-container">
-                                <input
-                                    type="checkbox"
-                                    checked={enableLens}
-                                    onChange={(e) => setEnableLens(e.target.checked)}
-                                />
-                                <span className="checkmark"></span>
-                                Enable Digital Lens (Enhance Image)
-                            </label>
-                        </div>
-
-                        <label className="btn-secondary upload-btn">
-                            {isLoading ? (statusText || 'Scanning...') : 'Select Image (JPG/PNG)'}
-                            <input
-                                type="file"
-                                accept="image/*,application/pdf"
-                                hidden
-                                onChange={handleFileUpload}
-                                disabled={isLoading}
-                            />
-                        </label>
-                    </div>
+                    <div className="divider"></div>
 
                     {history.length > 0 && (
                         <div className="history-section">
