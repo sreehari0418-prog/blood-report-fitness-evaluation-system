@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specialized Diet - Blood App Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #E11D48;
+            --color-success: #10B981;
+            --color-text-main: #1F2937;
+            --color-text-secondary: #6B7280;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #ECFDF5 0%, #F9FAFB 100%);
+            min-height: 100vh;
+            padding: var(--spacing-md);
+        }
+
+        .diet-container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .header h1 {
+            color: var(--color-text-main);
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+
+
+        .info-card {
+            background: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .meal-card {
+            background: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .meal-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 2px solid #F3F4F6;
+        }
+
+        .meal-icon {
+            font-size: 36px;
+        }
+
+        .meal-title h3 {
+            color: var(--color-text-main);
+            margin-bottom: 4px;
+        }
+
+        .meal-title p {
+            color: var(--color-text-secondary);
+            font-size: 13px;
+        }
+
+        .food-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .food-item {
+            padding: var(--spacing-md);
+            margin-bottom: 8px;
+            background: #F9FAFB;
+            border-radius: var(--radius-md);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .food-name {
+            font-weight: 600;
+            color: var(--color-text-main);
+        }
+
+        .food-portion {
+            color: var(--color-text-secondary);
+            font-size: 13px;
+        }
+
+        .nutrition-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--spacing-md);
+            margin-top: var(--spacing-md);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .nutrient {
+            text-align: center;
+        }
+
+        .nutrient-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-success);
+        }
+
+        .nutrient-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 4px;
+        }
+
+        .tips-box {
+            background: #F0F9FF;
+            border-left: 4px solid #3B82F6;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .tips-box h4 {
+            color: var(--color-text-main);
+            margin-bottom: 8px;
+        }
+
+        .tips-box ul {
+            margin-left: 20px;
+            color: var(--color-text-secondary);
+            line-height: 1.8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="diet-container">
+
+
+        <div class="header">
+            <h1>🍎 Specialized Diet Plan</h1>
+            <p>Personalized meals for optimal health</p>
+        </div>
+
+        <div class="info-card">
+            <h3 style="margin-bottom: 12px;">📊 Your Health Profile</h3>
+            <p style="color: var(--color-text-secondary); line-height: 1.6;">
+                Based on your blood report analysis, we've created a diet plan optimized for:
+                <br><br>
+                ✅ Managing blood sugar levels<br>
+                ✅ Reducing cholesterol<br>
+                ✅ Increasing iron intake<br>
+                ✅ Supporting overall wellness
+            </p>
+        </div>
+
+        <!-- Breakfast -->
+        <div class="meal-card">
+            <div class="meal-header">
+                <div class="meal-icon">🌅</div>
+                <div class="meal-title">
+                    <h3>Breakfast</h3>
+                    <p>7:00 AM - 9:00 AM</p>
+                </div>
+            </div>
+            <ul class="food-list">
+                <li class="food-item">
+                    <span class="food-name">🥣 Oatmeal with Berries</span>
+                    <span class="food-portion">1 bowl</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🥚 Boiled Eggs</span>
+                    <span class="food-portion">2 eggs</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🥑 Avocado Toast</span>
+                    <span class="food-portion">1 slice</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🍊 Fresh Orange Juice</span>
+                    <span class="food-portion">200ml</span>
+                </li>
+            </ul>
+            <div class="nutrition-summary">
+                <div class="nutrient">
+                    <div class="nutrient-value">420</div>
+                    <div class="nutrient-label">Calories</div>
+                </div>
+                <div class="nutrient">
+                    <div class="nutrient-value">18g</div>
+                    <div class="nutrient-label">Protein</div>
+                </div>
+                <div class="nutrient">
+                    <div class="nutrient-value">12g</div>
+                    <div class="nutrient-label">Fiber</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lunch -->
+        <div class="meal-card">
+            <div class="meal-header">
+                <div class="meal-icon">☀️</div>
+                <div class="meal-title">
+                    <h3>Lunch</h3>
+                    <p>12:00 PM - 2:00 PM</p>
+                </div>
+            </div>
+            <ul class="food-list">
+                <li class="food-item">
+                    <span class="food-name">🍗 Grilled Chicken Breast</span>
+                    <span class="food-portion">150g</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🥗 Mixed Vegetable Salad</span>
+                    <span class="food-portion">1 large bowl</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🍚 Brown Rice</span>
+                    <span class="food-portion">1 cup</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🥤 Buttermilk</span>
+                    <span class="food-portion">200ml</span>
+                </li>
+            </ul>
+            <div class="nutrition-summary">
+                <div class="nutrient">
+                    <div class="nutrient-value">580</div>
+                    <div class="nutrient-label">Calories</div>
+                </div>
+                <div class="nutrient">
+                    <div class="nutrient-value">42g</div>
+                    <div class="nutrient-label">Protein</div>
+                </div>
+                <div class="nutrient">
+                    <div class="nutrient-value">8g</div>
+                    <div class="nutrient-label">Fiber</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dinner -->
+        <div class="meal-card">
+            <div class="meal-header">
+                <div class="meal-icon">🌙</div>
+                <div class="meal-title">
+                    <h3>Dinner</h3>
+                    <p>7:00 PM - 9:00 PM</p>
+                </div>
+            </div>
+            <ul class="food-list">
+                <li class="food-item">
+                    <span class="food-name">🐟 Baked Salmon</span>
+                    <span class="food-portion">120g</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🥦 Steamed Broccoli</span>
+                    <span class="food-portion">1 cup</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🍠 Sweet Potato</span>
+                    <span class="food-portion">1 medium</span>
+                </li>
+                <li class="food-item">
+                    <span class="food-name">🥛 Warm Milk</span>
+                    <span class="food-portion">200ml</span>
+                </li>
+            </ul>
+            <div class="nutrition-summary">
+                <div class="nutrient">
+                    <div class="nutrient-value">480</div>
+                    <div class="nutrient-label">Calories</div>
+                </div>
+                <div class="nutrient">
+                    <div class="nutrient-value">35g</div>
+                    <div class="nutrient-label">Protein</div>
+                </div>
+                <div class="nutrient">
+                    <div class="nutrient-value">9g</div>
+                    <div class="nutrient-label">Fiber</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tips-box">
+            <h4>💡 Dietary Tips</h4>
+            <ul>
+                <li>Drink at least 8 glasses of water daily</li>
+                <li>Avoid processed and sugary foods</li>
+                <li>Include healthy snacks like nuts and fruits between meals</li>
+                <li>Eat dinner at least 2 hours before bedtime</li>
+                <li>Practice portion control and mindful eating</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        console.log('Specialized Diet Plan loaded');
+        console.log('Daily Total: ~1480 calories, 95g protein, 29g fiber');
+    </script>
+</body>
+
+</html>

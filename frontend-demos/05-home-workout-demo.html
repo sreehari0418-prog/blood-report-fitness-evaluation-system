@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Workout - Blood App Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #E11D48;
+            --color-success: #10B981;
+            --color-text-main: #1F2937;
+            --color-text-secondary: #6B7280;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #FFF1F2 0%, #F9FAFB 100%);
+            min-height: 100vh;
+            padding: var(--spacing-md);
+        }
+
+        .workout-container {
+            max-width: 800px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .header h1 {
+            color: var(--color-text-main);
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        .exercises-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .exercise-card {
+            background: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .exercise-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px rgba(0, 0, 0, 0.15);
+            border-color: var(--color-primary);
+        }
+
+        .exercise-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .exercise-card h3 {
+            color: var(--color-text-main);
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .exercise-card p {
+            color: var(--color-text-secondary);
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .calories-badge {
+            display: inline-block;
+            background: #FFF1F2;
+            color: var(--color-primary);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-md);
+        }
+
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--color-text-secondary);
+        }
+
+        .exercise-demo {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .exercise-demo-icon {
+            font-size: 80px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .steps-list {
+            background: #F9FAFB;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .steps-list h4 {
+            color: var(--color-text-main);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .step-item {
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+            background: white;
+            border-radius: var(--radius-md);
+            border-left: 4px solid var(--color-primary);
+        }
+
+        .step-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-md);
+        }
+
+        .stat-box {
+            background: #F9FAFB;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            text-align: center;
+        }
+
+        .stat-box h5 {
+            color: var(--color-text-secondary);
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .stat-box p {
+            color: var(--color-text-main);
+            font-size: 20px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="workout-container">
+
+
+        <div class="header">
+            <h1>💪 Home Workout</h1>
+            <p>8 Basic exercises to stay fit at home</p>
+        </div>
+
+        <div class="exercises-grid">
+            <div class="exercise-card" onclick="openExercise('pushups')">
+                <div class="exercise-icon">🤸</div>
+                <h3>Push-ups</h3>
+                <p>Upper body strength</p>
+                <span class="calories-badge">7 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('squats')">
+                <div class="exercise-icon">🦵</div>
+                <h3>Squats</h3>
+                <p>Lower body workout</p>
+                <span class="calories-badge">8 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('plank')">
+                <div class="exercise-icon">🧘</div>
+                <h3>Plank</h3>
+                <p>Core strengthening</p>
+                <span class="calories-badge">5 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('jumpingjacks')">
+                <div class="exercise-icon">🏃</div>
+                <h3>Jumping Jacks</h3>
+                <p>Cardio warmup</p>
+                <span class="calories-badge">10 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('lunges')">
+                <div class="exercise-icon">🚶</div>
+                <h3>Lunges</h3>
+                <p>Leg toning</p>
+                <span class="calories-badge">6 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('crunches')">
+                <div class="exercise-icon">💪</div>
+                <h3>Crunches</h3>
+                <p>Ab workout</p>
+                <span class="calories-badge">5 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('burpees')">
+                <div class="exercise-icon">🔥</div>
+                <h3>Burpees</h3>
+                <p>Full body cardio</p>
+                <span class="calories-badge">12 cal/min</span>
+            </div>
+
+            <div class="exercise-card" onclick="openExercise('mountainclimbers')">
+                <div class="exercise-icon">⛰️</div>
+                <h3>Mountain Climbers</h3>
+                <p>Core & cardio</p>
+                <span class="calories-badge">11 cal/min</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exercise Modal -->
+    <div class="modal" id="exerciseModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Push-ups</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <div class="exercise-demo">
+                <div class="exercise-demo-icon" id="modalIcon">🤸</div>
+            </div>
+
+            <div class="stats-row">
+                <div class="stat-box">
+                    <h5>Calories/Min</h5>
+                    <p id="modalCalories">7</p>
+                </div>
+                <div class="stat-box">
+                    <h5>Recommended Sets</h5>
+                    <p id="modalSets">3 × 10</p>
+                </div>
+            </div>
+
+            <div class="steps-list">
+                <h4>📋 How to Perform</h4>
+                <div id="stepsContainer"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const exercises = {
+            pushups: {
+                name: 'Push-ups',
+                icon: '🤸',
+                calories: 7,
+                sets: '3 × 10',
+                steps: [
+                    'Start in a plank position with hands shoulder-width apart',
+                    'Lower your body until chest nearly touches the floor',
+                    'Keep your back straight and core engaged',
+                    'Push back up to starting position',
+                    'Repeat for desired reps'
+                ]
+            },
+            squats: {
+                name: 'Squats',
+                icon: '🦵',
+                calories: 8,
+                sets: '3 × 15',
+                steps: [
+                    'Stand with feet shoulder-width apart',
+                    'Lower your body by bending knees and hips',
+                    'Keep chest up and back straight',
+                    'Go down until thighs are parallel to floor',
+                    'Push through heels to return to start'
+                ]
+            },
+            plank: {
+                name: 'Plank',
+                icon: '🧘',
+                calories: 5,
+                sets: '3 × 30s',
+                steps: [
+                    'Start in forearm plank position',
+                    'Keep body in straight line from head to heels',
+                    'Engage core and squeeze glutes',
+                    'Hold position without letting hips sag',
+                    'Breathe steadily throughout'
+                ]
+            },
+            jumpingjacks: {
+                name: 'Jumping Jacks',
+                icon: '🏃',
+                calories: 10,
+                sets: '3 × 20',
+                steps: [
+                    'Stand with feet together, arms at sides',
+                    'Jump while spreading legs shoulder-width',
+                    'Simultaneously raise arms above head',
+                    'Jump back to starting position',
+                    'Maintain steady rhythm'
+                ]
+            },
+            lunges: {
+                name: 'Lunges',
+                icon: '🚶',
+                calories: 6,
+                sets: '3 × 10',
+                steps: [
+                    'Stand with feet hip-width apart',
+                    'Step forward with one leg',
+                    'Lower hips until both knees bent at 90°',
+                    'Push back to starting position',
+                    'Alternate legs'
+                ]
+            },
+            crunches: {
+                name: 'Crunches',
+                icon: '💪',
+                calories: 5,
+                sets: '3 × 15',
+                steps: [
+                    'Lie on back with knees bent',
+                    'Place hands behind head',
+                    'Lift shoulders off ground using abs',
+                    'Keep lower back on floor',
+                    'Lower back down with control'
+                ]
+            },
+            burpees: {
+                name: 'Burpees',
+                icon: '🔥',
+                calories: 12,
+                sets: '3 × 8',
+                steps: [
+                    'Start standing, drop into squat position',
+                    'Place hands on floor, jump feet back to plank',
+                    'Do one push-up',
+                    'Jump feet back to squat position',
+                    'Jump up with arms overhead'
+                ]
+            },
+            mountainclimbers: {
+                name: 'Mountain Climbers',
+                icon: '⛰️',
+                calories: 11,
+                sets: '3 × 15',
+                steps: [
+                    'Start in high plank position',
+                    'Bring right knee toward chest',
+                    'Quickly switch legs',
+                    'Continue alternating at quick pace',
+                    'Keep core engaged throughout'
+                ]
+            }
+        };
+
+        function openExercise(exerciseId) {
+            const exercise = exercises[exerciseId];
+
+            document.getElementById('modalTitle').textContent = exercise.name;
+            document.getElementById('modalIcon').textContent = exercise.icon;
+            document.getElementById('modalCalories').textContent = exercise.calories;
+            document.getElementById('modalSets').textContent = exercise.sets;
+
+            const stepsContainer = document.getElementById('stepsContainer');
+            stepsContainer.innerHTML = exercise.steps.map((step, index) =>
+                `<div class="step-item"><strong>${index + 1}.</strong> ${step}</div>`
+            ).join('');
+
+            document.getElementById('exerciseModal').classList.add('show');
+            console.log('Opened exercise:', exercise.name);
+        }
+
+        function closeModal() {
+            document.getElementById('exerciseModal').classList.remove('show');
+        }
+
+        // Close modal on background click
+        document.getElementById('exerciseModal').addEventListener('click', (e) => {
+            if (e.target.id === 'exerciseModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

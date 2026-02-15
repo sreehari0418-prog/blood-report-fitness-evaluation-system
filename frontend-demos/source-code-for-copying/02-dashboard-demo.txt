@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Blood App Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #E11D48;
+            --color-text-main: #1F2937;
+            --color-text-secondary: #6B7280;
+            --color-text-muted: #9CA3AF;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #F9FAFB;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .dashboard-container {
+            padding: var(--spacing-md);
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dash-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: var(--color-primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: var(--shadow-md);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .welcome-text {
+            flex: 1;
+        }
+
+        .welcome-text p {
+            color: var(--color-text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .welcome-text h3 {
+            color: var(--color-text-main);
+            font-size: 20px;
+        }
+
+        .stats-preview {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #4CC9F0 0%, #4361EE 100%);
+            color: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card h4 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .stat-card p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .option-card {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            background: white;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            box-shadow: var(--shadow-sm);
+            text-align: left;
+            width: 100%;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .option-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .option-card:active {
+            transform: scale(0.98);
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 24px;
+        }
+
+        .text-box {
+            flex: 1;
+        }
+
+        .text-box h4 {
+            margin-bottom: 2px;
+            color: var(--color-text-main);
+            font-size: 16px;
+        }
+
+        .text-box p {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+        }
+
+        .arrow {
+            color: var(--color-text-muted);
+            font-weight: bold;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+
+
+        <header class="dash-header">
+            <div class="avatar" onclick="alert('Profile clicked!')">U</div>
+            <div class="welcome-text">
+                <p>Welcome back,</p>
+                <h3>User</h3>
+            </div>
+        </header>
+
+        <div class="stats-preview">
+            <div class="stat-card">
+                <h4>Stay Hydrated! 💧</h4>
+                <p>Drink 8 glasses of water today.</p>
+            </div>
+        </div>
+
+        <div class="options-grid">
+            <div class="option-card" onclick="navigate('blood')" style="--hover-color: #4361EE;">
+                <div class="icon-box" style="color: #4361EE; background-color: #F0F4FF;">
+                    📄
+                </div>
+                <div class="text-box">
+                    <h4>Blood Evaluation</h4>
+                    <p>Analyze reports & get insights</p>
+                </div>
+                <div class="arrow">→</div>
+            </div>
+
+            <div class="option-card" onclick="navigate('diet')" style="--hover-color: #10B981;">
+                <div class="icon-box" style="color: #10B981; background-color: #ECFDF5;">
+                    🍎
+                </div>
+                <div class="text-box">
+                    <h4>Specialized Diet</h4>
+                    <p>Meals based on Blood Report</p>
+                </div>
+                <div class="arrow">→</div>
+            </div>
+
+            <div class="option-card" onclick="navigate('bmi')" style="--hover-color: #E11D48;">
+                <div class="icon-box" style="color: #E11D48; background-color: #FFF0F1;">
+                    🧮
+                </div>
+                <div class="text-box">
+                    <h4>BMI Calculator</h4>
+                    <p>Check your health risk & vitals</p>
+                </div>
+                <div class="arrow">→</div>
+            </div>
+
+            <div class="option-card" onclick="navigate('fitness')" style="--hover-color: #2A9D8F;">
+                <div class="icon-box" style="color: #2A9D8F; background-color: #EDF7F6;">
+                    🍽️
+                </div>
+                <div class="text-box">
+                    <h4>Fitness Helper</h4>
+                    <p>Diet plans & weight goals</p>
+                </div>
+                <div class="arrow">→</div>
+            </div>
+
+            <div class="option-card" onclick="navigate('homeworkout')" style="--hover-color: #FF6B6B;">
+                <div class="icon-box" style="color: #FF6B6B; background-color: #FFF0F1;">
+                    💪
+                </div>
+                <div class="text-box">
+                    <h4>Home Workout</h4>
+                    <p>8 Basic exercises & calories</p>
+                </div>
+                <div class="arrow">→</div>
+            </div>
+
+            <div class="option-card" onclick="navigate('chat')" style="--hover-color: #7209B7;">
+                <div class="icon-box" style="color: #7209B7; background-color: #F3E8FF;">
+                    💬
+                </div>
+                <div class="text-box">
+                    <h4>AI Health Bot</h4>
+                    <p>Ask questions & get advice</p>
+                </div>
+                <div class="arrow">→</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function navigate(page) {
+            console.log(`Navigating to: ${page}`);
+            alert(`✅ In the real app, you would navigate to: ${page.toUpperCase()}`);
+        }
+    </script>
+</body>
+
+</html>

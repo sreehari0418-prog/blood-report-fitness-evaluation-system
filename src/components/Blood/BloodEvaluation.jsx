@@ -334,7 +334,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     Absolute_Lymphocyte_Count: extractedValues['absolute_lymphocyte_count'] || 0
                 };
 
-                const response = await fetch('http://127.0.0.1:5000/predict', {
+                const response = await fetch('http://127.0.0.1:5001/predict', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(mlPayload)
@@ -450,47 +450,50 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
 
         try {
             // OPTION 1: Try Backend Enhanced OCR (ML Correction + Table Detection)
-            try {
-                setStatusText('Analyzing with Advanced AI...');
+            // Checks: Must be in ML Mode AND not a PDF
+            if (analysisMode === 'ml') {
+                try {
+                    setStatusText('Analyzing with Advanced AI...');
 
-                const formData = new FormData();
-                formData.append('image', file);
+                    const formData = new FormData();
+                    formData.append('image', file);
 
-                // Use backend running on port 5000
-                const response = await fetch('http://localhost:5000/ocr', {
-                    method: 'POST',
-                    body: formData
-                });
+                    // Use backend running on port 5001
+                    const response = await fetch('http://localhost:5001/ocr', {
+                        method: 'POST',
+                        body: formData
+                    });
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && Object.keys(result.detected_values).length > 0) {
-                        console.log("✅ Using Backend OCR Results:", result);
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success && Object.keys(result.detected_values).length > 0) {
+                            console.log("✅ Using Backend OCR Results:", result);
 
-                        // Show corrections if any
-                        const correctionCount = result.corrections ? Object.keys(result.corrections).length : 0;
-                        if (correctionCount > 0) {
-                            setStatusText(`Corrected ${correctionCount} values with AI...`);
-                            await new Promise(r => setTimeout(r, 1000)); // Show message briefly
+                            // Show corrections if any
+                            const correctionCount = result.corrections ? Object.keys(result.corrections).length : 0;
+                            if (correctionCount > 0) {
+                                setStatusText(`Corrected ${correctionCount} values with AI...`);
+                                await new Promise(r => setTimeout(r, 1000)); // Show message briefly
+                            }
+
+                            // Extract metadata (Age/Gender) from raw text if possible, using existing logic equivalent
+                            let patientMeta = { Age: 30, Gender: 'M' };
+                            const lowerText = result.raw_text.toLowerCase();
+
+                            // Simple client-side meta extraction from raw text
+                            const ageMatch = lowerText.match(/age\s*[:\-\.]?\s*(\d{1,3})/);
+                            if (ageMatch) patientMeta.Age = parseInt(ageMatch[1]);
+
+                            if (lowerText.includes('female') || lowerText.includes('sex: f')) patientMeta.Gender = 'F';
+
+                            // Call finishAnalysis directly with corrected values
+                            finishAnalysis(result.detected_values, patientMeta);
+                            return; // Done!
                         }
-
-                        // Extract metadata (Age/Gender) from raw text if possible, using existing logic equivalent
-                        let patientMeta = { Age: 30, Gender: 'M' };
-                        const lowerText = result.raw_text.toLowerCase();
-
-                        // Simple client-side meta extraction from raw text
-                        const ageMatch = lowerText.match(/age\s*[:\-\.]?\s*(\d{1,3})/);
-                        if (ageMatch) patientMeta.Age = parseInt(ageMatch[1]);
-
-                        if (lowerText.includes('female') || lowerText.includes('sex: f')) patientMeta.Gender = 'F';
-
-                        // Call finishAnalysis directly with corrected values
-                        finishAnalysis(result.detected_values, patientMeta);
-                        return; // Done!
                     }
+                } catch (backendErr) {
+                    console.warn("Backend OCR unavailable, falling back to local Tesseract:", backendErr);
                 }
-            } catch (backendErr) {
-                console.warn("Backend OCR unavailable, falling back to local Tesseract:", backendErr);
             }
 
             // OPTION 2: Fallback to Local Tesseract.js (Original Method)

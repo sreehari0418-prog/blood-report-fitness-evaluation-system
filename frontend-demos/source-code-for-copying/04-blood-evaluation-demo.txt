@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blood Evaluation - Blood App Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #E11D48;
+            --color-success: #10B981;
+            --color-warning: #F59E0B;
+            --color-danger: #EF4444;
+            --color-text-main: #1F2937;
+            --color-text-secondary: #6B7280;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #FFF1F2 0%, #F9FAFB 100%);
+            min-height: 100vh;
+            padding: var(--spacing-md);
+        }
+
+        .blood-container {
+            max-width: 600px;
+            margin: 0 auto;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .header h1 {
+            color: var(--color-text-main);
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        .upload-card {
+            background: white;
+            padding: var(--spacing-xl);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .upload-area {
+            border: 2px dashed #D1D5DB;
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .upload-area:hover {
+            border-color: var(--color-primary);
+            background: #FFF1F2;
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .upload-text h3 {
+            color: var(--color-text-main);
+            margin-bottom: 8px;
+        }
+
+        .upload-text p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn-analyze {
+            width: 100%;
+            padding: 14px;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: var(--spacing-lg);
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .btn-analyze.show {
+            display: block;
+        }
+
+        .btn-analyze:hover {
+            background: #BE123C;
+            transform: translateY(-1px);
+        }
+
+        .analysis-card {
+            background: white;
+            padding: var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            display: none;
+        }
+
+        .analysis-card.show {
+            display: block;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .parameter-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-md);
+            border-bottom: 1px solid #F3F4F6;
+        }
+
+        .parameter-row:last-child {
+            border-bottom: none;
+        }
+
+        .param-name {
+            font-weight: 600;
+            color: var(--color-text-main);
+        }
+
+        .param-value {
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .param-value.normal {
+            color: var(--color-success);
+        }
+
+        .param-value.warning {
+            color: var(--color-warning);
+        }
+
+        .param-value.danger {
+            color: var(--color-danger);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .status-badge.normal {
+            background: #D1FAE5;
+            color: #065F46;
+        }
+
+        .status-badge.warning {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-badge.danger {
+            background: #FEE2E2;
+            color: #991B1B;
+        }
+
+        .summary-box {
+            background: #F0F9FF;
+            border-left: 4px solid #3B82F6;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-lg);
+        }
+
+        .summary-box h4 {
+            color: var(--color-text-main);
+            margin-bottom: 8px;
+        }
+
+        .summary-box p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+
+
+        .file-preview {
+            margin-top: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: #F9FAFB;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--color-text-secondary);
+        }
+
+        .processing {
+            text-align: center;
+            padding: var(--spacing-xl);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #F3F4F6;
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--spacing-md);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blood-container">
+
+
+        <div class="header">
+            <h1>🩸 Blood Evaluation</h1>
+            <p>AI-powered blood report analysis</p>
+        </div>
+
+        <div class="upload-card">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">
+                    <h3>Upload Blood Report</h3>
+                    <p>Upload PDF or Image (JPG, PNG)</p>
+                    <p style="margin-top: 8px; font-size: 12px; color: #9CA3AF;">Max size: 5MB</p>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf,.jpg,.jpeg,.png">
+            <div class="file-preview" id="filePreview" style="display: none;"></div>
+            <button class="btn-analyze" id="analyzeBtn">Analyze Report</button>
+        </div>
+
+        <div class="processing" id="processing" style="display: none;">
+            <div class="spinner"></div>
+            <p style="color: var(--color-text-secondary);">Processing your report...</p>
+        </div>
+
+        <div class="analysis-card" id="analysisCard">
+            <h3 style="margin-bottom: var(--spacing-lg); color: var(--color-text-main);">📊 Analysis Results</h3>
+
+            <div class="parameter-row">
+                <div>
+                    <div class="param-name">Hemoglobin</div>
+                    <span class="status-badge normal">Normal</span>
+                </div>
+                <div class="param-value normal">14.2 g/dL</div>
+            </div>
+
+            <div class="parameter-row">
+                <div>
+                    <div class="param-name">WBC Count</div>
+                    <span class="status-badge normal">Normal</span>
+                </div>
+                <div class="param-value normal">7,200</div>
+            </div>
+
+            <div class="parameter-row">
+                <div>
+                    <div class="param-name">Platelet Count</div>
+                    <span class="status-badge normal">Normal</span>
+                </div>
+                <div class="param-value normal">250,000</div>
+            </div>
+
+            <div class="parameter-row">
+                <div>
+                    <div class="param-name">Blood Sugar (Fasting)</div>
+                    <span class="status-badge warning">Slightly High</span>
+                </div>
+                <div class="param-value warning">110 mg/dL</div>
+            </div>
+
+            <div class="parameter-row">
+                <div>
+                    <div class="param-name">Cholesterol</div>
+                    <span class="status-badge normal">Normal</span>
+                </div>
+                <div class="param-value normal">180 mg/dL</div>
+            </div>
+
+            <div class="summary-box">
+                <h4>💡 AI Health Summary</h4>
+                <p>Overall, your blood parameters are within normal ranges. Your fasting blood sugar is slightly
+                    elevated. Consider consulting with your healthcare provider for personalized advice. Maintain a
+                    balanced diet and regular physical activity.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedFile = file;
+                const preview = document.getElementById('filePreview');
+                preview.innerHTML = `📎 Selected: <strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+                preview.style.display = 'block';
+
+                document.getElementById('analyzeBtn').classList.add('show');
+                console.log('File selected:', file.name, file.type, file.size);
+            }
+        });
+
+        document.getElementById('analyzeBtn').addEventListener('click', () => {
+            if (!selectedFile) {
+                alert('Please select a file first!');
+                return;
+            }
+
+            // Hide upload card
+            document.querySelector('.upload-card').style.display = 'none';
+
+            // Show processing
+            document.getElementById('processing').style.display = 'block';
+
+            // Simulate processing
+            setTimeout(() => {
+                document.getElementById('processing').style.display = 'none';
+                document.getElementById('analysisCard').classList.add('show');
+
+                console.log('Analysis complete!');
+                console.log('Sample blood parameters extracted and analyzed using ML model');
+            }, 2500);
+        });
+    </script>
+</body>
+
+</html>

@@ -240,8 +240,84 @@ def update_profile():
         return jsonify({'error': 'Failed to update profile'}), 500
 
 # ============================================================================
-# ML ANALYSIS
+# ML CONFIGURATION & LOADING
 # ============================================================================
+
+import joblib
+import pandas as pd
+import numpy as np
+
+# Path to the trained model
+MODEL_PATH = "ml_models_advanced/best_blood_model.pkl"
+ML_ARTIFACTS = None
+
+# Load Model on Startup
+try:
+    if os.path.exists(MODEL_PATH):
+        print(f"🧠 Loading Advanced ML Model from {MODEL_PATH}...")
+        ML_ARTIFACTS = joblib.load(MODEL_PATH)
+        print("✅ Model & Artifacts Loaded Successfully")
+    else:
+        print(f"⚠️ Model file not found at {MODEL_PATH}. Prediction endpoint will return 503.")
+except Exception as e:
+    print(f"❌ Failed to load model: {e}")
+
+# ============================================================================
+# ML ENDPOINTS
+# ============================================================================
+
+@app.route('/api/predict-disease', methods=['POST'])
+def predict_disease():
+    if not ML_ARTIFACTS:
+        return jsonify({"error": "ML Model not loaded on server"}), 503
+    
+    try:
+        data = request.json
+        print(f"📥 Received Prediction Request: {data}")
+
+        # 1. Prepare Dataframe with correct column order
+        feature_names = ML_ARTIFACTS['feature_names']
+        
+        # Create input dictionary - careful handling of missing values
+        input_data = {}
+        for col in feature_names:
+            val = data.get(col, 0.0)
+            try:
+                val = float(val)
+            except:
+                val = 0.0
+            input_data[col] = [val]
+        
+        df_input = pd.DataFrame(input_data)
+
+        # 2. Preprocessing: Scale Features
+        scaler = ML_ARTIFACTS['scaler']
+        X_scaled = pd.DataFrame(scaler.transform(df_input[feature_names]), columns=feature_names)
+
+        # 3. Predict
+        model = ML_ARTIFACTS['model']
+        pred_idx = model.predict(X_scaled)[0]
+        # Decode the label (0 -> "Healthy", 1 -> "Anemia", etc.)
+        pred_label = ML_ARTIFACTS['le_target'].inverse_transform([pred_idx])[0]
+        
+        # Get Probability/Confidence
+        confidence = 0.0
+        if hasattr(model, "predict_proba"):
+            probs = model.predict_proba(X_scaled)
+            confidence = float(np.max(probs))
+
+        print(f"📤 Prediction: {pred_label} ({confidence:.2f})")
+
+        return jsonify({
+            "status": "success",
+            "prediction": pred_label,
+            "confidence": f"{confidence*100:.1f}%",
+            "message": "Analysis based on random forest model"
+        })
+
+    except Exception as e:
+        print(f"❌ Prediction Error: {e}")
+        return jsonify({"error": str(e)}), 400
 
 @app.route('/analyze', methods=['POST'])
 def analyze_report():
@@ -259,7 +335,7 @@ def analyze_report():
         file.save(filepath)
         
         try:
-            print(f"🧠 Processing {filename} with ML Model...")
+            print(f"🧠 Processing {filename} with OCR and Extraction...")
             results = extract_data(filepath)
             
             return jsonify({
@@ -269,10 +345,10 @@ def analyze_report():
             })
 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"❌ Error during extraction: {e}")
             return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.getenv('PORT', 5000))
-    print(f"🚀 Blood & Fit Unified API (SQLAlchemy) running on port {port}")
+    port = int(os.getenv('PORT', 5001))
+    print(f"🚀 Blood & Fit Unified API (SQLAlchemy + ML) running on port {port}")
     app.run(host='0.0.0.0', port=port, debug=True)

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Health Bot - Blood App Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #E11D48;
+            --color-text-main: #1F2937;
+            --color-text-secondary: #6B7280;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #F3E8FF 0%, #F9FAFB 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            padding: var(--spacing-md);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .header h1 {
+            color: var(--color-text-main);
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-md);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-md);
+            min-height: 400px;
+            max-height: 500px;
+        }
+
+        .message {
+            margin-bottom: var(--spacing-md);
+            display: flex;
+            gap: var(--spacing-md);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #7209B7, #560BAD);
+        }
+
+        .message.user .message-avatar {
+            background: var(--color-primary);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            line-height: 1.5;
+        }
+
+        .message.bot .message-content {
+            background: #F3E8FF;
+            color: var(--color-text-main);
+        }
+
+        .message.user .message-content {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .quick-questions {
+            padding: var(--spacing-md);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .quick-questions h4 {
+            color: var(--color-text-main);
+            margin-bottom: var(--spacing-md);
+            font-size: 14px;
+        }
+
+        .questions-grid {
+            display: grid;
+            gap: var(--spacing-md);
+        }
+
+        .question-btn {
+            padding: 12px;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-size: 14px;
+            color: var(--color-text-main);
+        }
+
+        .question-btn:hover {
+            background: #F3E8FF;
+            border-color: #7209B7;
+        }
+
+        .input-area {
+            display: flex;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #E5E7EB;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            resize: none;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: #7209B7;
+            box-shadow: 0 0 0 3px rgba(114, 9, 183, 0.1);
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #7209B7, #560BAD);
+            color: white;
+            border: none;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(114, 9, 183, 0.3);
+        }
+
+        .send-btn:active {
+            transform: scale(0.98);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 8px 12px;
+            background: #F3E8FF;
+            border-radius: var(--radius-md);
+            width: fit-content;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #7209B7;
+            border-radius: 50%;
+            animation: bounce 1.4s ease-in-out infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+            }
+
+            30% {
+                transform: translateY(-8px);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-container">
+
+
+        <div class="header">
+            <h1>💬 AI Health Bot</h1>
+            <p>Your 24/7 health companion</p>
+        </div>
+
+        <div class="quick-questions">
+            <h4>💡 Quick Questions</h4>
+            <div class="questions-grid">
+                <button class="question-btn" onclick="askQuestion('What exercises are good for beginners?')">
+                    What exercises are good for beginners?
+                </button>
+                <button class="question-btn" onclick="askQuestion('How can I improve my blood sugar levels?')">
+                    How can I improve my blood sugar levels?
+                </button>
+                <button class="question-btn" onclick="askQuestion('What is a healthy BMI range?')">
+                    What is a healthy BMI range?
+                </button>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    Hello! I'm your AI health assistant. I can help you with questions about fitness, nutrition, blood
+                    reports, and general health advice. How can I assist you today?
+                </div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <textarea id="chatInput" class="chat-input" placeholder="Ask me anything about health..."
+                rows="1"></textarea>
+            <button class="send-btn" onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const responses = {
+            'exercise': 'For beginners, I recommend starting with basic exercises like walking, light jogging, push-ups, and squats. Start with 20-30 minutes, 3 times per week, and gradually increase intensity. Always warm up before and cool down after exercising.',
+            'blood sugar': 'To improve blood sugar levels: 1) Eat more fiber-rich foods like whole grains and vegetables, 2) Exercise regularly (at least 150 minutes per week), 3) Stay hydrated, 4) Reduce refined carbs and sugary foods, 5) Get adequate sleep (7-9 hours). Always consult your doctor for personalized advice.',
+            'bmi': 'A healthy BMI range for adults is typically 18.5-24.9. Under 18.5 is underweight, 25-29.9 is overweight, and 30+ is considered obese. However, BMI is just one indicator - muscle mass, age, and other factors also matter. Consult a healthcare provider for personalized assessment.',
+            'default': 'That\'s a great question! Based on health guidelines, I recommend maintaining a balanced diet, regular exercise, adequate sleep, and staying hydrated. For specific medical concerns, always consult with a healthcare professional. Is there anything specific you\'d like to know more about?'
+        };
+
+        function getResponse(message) {
+            const lowerMessage = message.toLowerCase();
+
+            if (lowerMessage.includes('exercise') || lowerMessage.includes('workout') || lowerMessage.includes('beginner')) {
+                return responses.exercise;
+            } else if (lowerMessage.includes('blood sugar') || lowerMessage.includes('diabetes') || lowerMessage.includes('glucose')) {
+                return responses['blood sugar'];
+            } else if (lowerMessage.includes('bmi') || lowerMessage.includes('weight') || lowerMessage.includes('healthy')) {
+                return responses.bmi;
+            } else {
+                return responses.default;
+            }
+        }
+
+        function addMessage(text, isUser) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = isUser ? '👤' : '🤖';
+
+            const content = document.createElement('div');
+            content.className = 'message-content';
+            content.textContent = text;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(content);
+            messagesContainer.appendChild(messageDiv);
+
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            document.getElementById('typingIndicator').classList.add('show');
+        }
+
+        function hideTyping() {
+            document.getElementById('typingIndicator').classList.remove('show');
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, true);
+            input.value = '';
+
+            console.log('User asked:', message);
+
+            // Show typing indicator
+            showTyping();
+
+            // Simulate AI response delay
+            setTimeout(() => {
+                hideTyping();
+                const response = getResponse(message);
+                addMessage(response, false);
+                console.log('Bot responded:', response);
+            }, 1500);
+        }
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        // Allow Enter to send (Shift+Enter for new line)
+        document.getElementById('chatInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+
+</html>
