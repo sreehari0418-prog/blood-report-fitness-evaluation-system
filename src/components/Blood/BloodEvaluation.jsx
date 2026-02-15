@@ -169,9 +169,18 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
 
 
             Object.keys(KEYWORD_MAP).forEach(paramKey => {
-                if (extractedValues[paramKey]) return; // Already found
+                let currentKey = paramKey; // Allow re-assignment for typo fixes
 
-                const synonyms = KEYWORD_MAP[paramKey];
+                // AUTO-CORRECT: Hemolab Report Typo
+                // Row says "White Blood Cell Count" but unit is "10^12" -> It's actually RBC
+                if (paramKey === 'total_count' && (lowerRow.includes('10^12') || lowerRow.includes('x10^12'))) {
+                    console.log("Auto-Correcting 'White Blood Cell' to 'RBC' based on 10^12 unit");
+                    currentKey = 'rbc_count';
+                }
+
+                if (extractedValues[currentKey]) return; // Already found
+
+                const synonyms = KEYWORD_MAP[currentKey];
 
                 // Adaptive Match: Check synonyms with fuzzy tolerance
                 const matchedSynonym = synonyms.find(s => {
@@ -185,7 +194,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 if (matchedSynonym) {
                     // CRITICAL FIX: Ensure the matched keyword appears in THIS row
                     // This prevents random number extraction for unrelated parameters
-                    const keywordInRow = synonyms.some(syn => lowerRow.includes(syn.toLowerCase()));
+                    // Check against synonyms of the *corrected* key
+                    const keywordInRow = KEYWORD_MAP[currentKey].some(syn => lowerRow.includes(syn.toLowerCase()));
                     if (!keywordInRow) return; // Skip if keyword not in this row
 
                     // Extract potential numbers from the *entire* row (not just after keyword)
@@ -201,7 +211,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     // 2. Context-Aware Comma Handling
                     // For large counts (WBC, Platelets), comma is thousands separator (remove it)
                     // For others (Hemoglobin), comma is likely decimal (replace with dot)
-                    if (['total_count', 'platelet_count', 'absolute_neutrophil_count'].includes(paramKey)) {
+                    if (['total_count', 'platelet_count', 'absolute_neutrophil_count'].includes(currentKey)) {
                         cleanNumbersRow = cleanNumbersRow.replace(/,/g, '');
                     } else {
                         cleanNumbersRow = cleanNumbersRow.replace(/,/g, '.');
@@ -238,11 +248,11 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                             if (isNaN(val)) continue;
 
                             // Filter out typical non-results (Years, etc)
-                            if (val > 1900 && val < 2100 && paramKey !== 'total_count') continue;
-                            if (val === 0 && paramKey !== 'basophil') continue;
+                            if (val > 1900 && val < 2100 && currentKey !== 'total_count') continue;
+                            if (val === 0 && currentKey !== 'basophil') continue;
 
                             // Check Medical Range Validity & Auto-Correct
-                            const range = MEDICAL_RANGES[paramKey];
+                            const range = MEDICAL_RANGES[currentKey];
                             if (range) {
                                 // Smart Scaling: Try powers of 10 to match units (e.g., 4.5 -> 4500, or 250000 -> 2.5)
                                 const scales = [1, 10, 100, 1000, 0.1, 0.01, 0.001, 0.0001];
@@ -273,7 +283,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                         }
 
                         if (bestMatchValue !== null) {
-                            extractedValues[paramKey] = bestMatchValue;
+                            extractedValues[currentKey] = bestMatchValue;
                         }
                     }
                 }

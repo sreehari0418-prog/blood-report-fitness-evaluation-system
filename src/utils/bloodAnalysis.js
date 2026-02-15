@@ -60,7 +60,7 @@ export const KEYWORD_MAP = {
     'sodium': ['sodium', 'na+', 'serum sodium'],
     'potassium': ['potassium', 'k+', 'serum potassium'],
     'chloride': ['chloride', 'cl-', 'serum chloride'],
-    'bicarbonate': ['bicarbonate', 'hco3', 'co2 content'],
+    'bicarbonate': ['bicarbonate', 'hco3', 'co2 content', 'carbon dioxide'], // Added Carbon Dioxide
     'calcium': ['calcium', 'total calcium'],
     'ionized_calcium': ['ionized calcium'],
     'phosphorus': ['phosphorus', 'phosphate', 'po4'],
@@ -68,7 +68,7 @@ export const KEYWORD_MAP = {
     'anion_gap': ['anion gap'],
 
     // 5. Diabetes/Glucose
-    'glucose_fasting': ['glucose fasting', 'fasting glucose', 'fbs', 'fasting blood sugar'],
+    'glucose_fasting': ['glucose fasting', 'fasting glucose', 'fbs', 'fasting blood sugar', 'glucose'], // Added generic Glucose
     'glucose_pp': ['glucose pp', 'ppbs', 'post prandial'],
     'glucose_random': ['random glucose', 'rbs'],
     'hba1c': ['hba1c', 'glycated hemoglobin', 'glycosylated hemoglobin'],
@@ -76,13 +76,13 @@ export const KEYWORD_MAP = {
     'c_peptide': ['c-peptide'],
 
     // 6. Lipids
-    'cholesterol': ['total cholesterol', 'serum cholesterol'],
+    'cholesterol': ['total cholesterol', 'serum cholesterol', 'cholesterol'],
     'hdl_cholesterol': ['hdl cholesterol', 'hdl'],
-    'ldl_cholesterol': ['ldl cholesterol', 'ldl'],
+    'ldl_cholesterol': ['ldl cholesterol', 'ldl', 'ldl chol., calculated'], // Added Calculated
     'triglycerides': ['triglycerides'],
     'vldl': ['vldl'],
     'ldl_hdl_ratio': ['ldl/hdl ratio'],
-    'chol_hdl_ratio': ['total cholesterol/hdl ratio', 'chol/hdl'],
+    'chol_hdl_ratio': ['total cholesterol/hdl ratio', 'chol/hdl', 'chol/hdl ratio'],
     'non_hdl_cholesterol': ['non-hdl cholesterol'],
 
     // 7. Thyroid
@@ -90,7 +90,7 @@ export const KEYWORD_MAP = {
     't3': ['triiodothyronine', 'total t3', 't3'],
     't4': ['thyroxine', 'total t4', 't4'],
     'free_t3': ['free t3', 'ft3'],
-    'free_t4': ['free t4', 'ft4'],
+    'free_t4': ['free t4', 'ft4', 'free thyroxine'], // Added Free Thyroxine
     'anti_tpo': ['anti-tpo', 'thyroid peroxidase antibody'],
 
     // 8. Vitamins & Hormones & Iron
@@ -114,8 +114,13 @@ export const KEYWORD_MAP = {
     'ck_mb': ['ck-mb'],
 
     // 9. Pancreas
-    'amylase': ['amylase', 'serum amylase'],
-    'lipase': ['lipase', 'serum lipase']
+    'amylase': ['amylase', 'serum amylase', 'amylase, serum'],
+    'lipase': ['lipase', 'serum lipase'],
+
+    // 10. Extended Hematology
+    'granulocyte': ['granulocyte', 'gra#', 'gra%', 'granulocytes'], // Added
+    'ldh': ['ldh', 'lactate dehydrogenase', 'ld'], // Added LD
+    'globulin': ['globulin', 'globulin, calculated'] // Added Calculated
 };
 
 export const MEDICAL_RANGES = {
@@ -143,19 +148,31 @@ export const MEDICAL_RANGES = {
     'uric_acid': { min: 3.5, max: 7.2, unit: 'mg/dL', foods: ['Cherries', 'No Alcohol'], impact: { high: "Gout risk. Avoid high-impact jumping." } },
     'egfr': { min: 90, max: 150, unit: 'mL/min', foods: [], impact: { low: "Kidney functionality concern. Consult doctor." } },
 
-    // 3. Liver
-    'bilirubin_total': { min: 0.3, max: 1.2, unit: 'mg/dL', foods: ['Radish', 'Lemon'], impact: { high: "Jaundice risk. No heavy lifting." } },
-    'sgot': { min: 10, max: 40, unit: 'U/L', foods: ['Liver Detox'], impact: { high: "Liver/Muscle stress. Take rest days." } },
-    'sgpt': { min: 7, max: 56, unit: 'U/L', foods: ['Whole grains'], impact: { high: "Liver enzyme elevation. Avoid alcohol/painkillers." } },
-    'alkaline_phosphatase': { min: 44, max: 147, unit: 'U/L', foods: [], impact: {} },
-    'total_protein': { min: 6.3, max: 8.2, unit: 'g/dL', foods: ['Lean Protein'], impact: {} },
-    'albumin': { min: 3.5, max: 5.0, unit: 'g/dL', foods: [], impact: {} },
-
     // 4. Electrolytes
     'sodium': { min: 135, max: 145, unit: 'mmol/L', foods: ['Balanced Salt'], impact: { low: "Hyponatremia risk. Salt intake needed.", high: "Dehydration." } },
     'potassium': { min: 3.5, max: 5.1, unit: 'mmol/L', foods: ['Banana', 'Coconut Water'], impact: { low: "Cramp risk. Electrolytes needed.", high: "Heart rhythm risk. Medical attention." } },
+    'chloride': { min: 96, max: 106, unit: 'mmol/L', foods: [], impact: { high: "Dehydration/Kidney issue." } },
+    'bicarbonate': { min: 22, max: 29, unit: 'mmol/L', foods: [], impact: { high: "Metabolic Alkalosis.", low: "Metabolic Acidosis." } },
     'calcium': { min: 8.5, max: 10.5, unit: 'mg/dL', foods: ['Milk', 'Yogurt'], impact: { low: "Bone weakness. Resistance train carefully." } },
     'magnesium': { min: 1.7, max: 2.4, unit: 'mg/dL', foods: ['Nuts', 'Seeds'], impact: { low: "Muscle twitching/cramps." } },
+    'phosphorus': { min: 2.5, max: 4.5, unit: 'mg/dL', foods: ['Dairy', 'Meat'], impact: { low: "Weak bones/muscles." } },
+
+    // 3. Liver (Extended)
+    'bilirubin_total': { min: 0.3, max: 1.2, unit: 'mg/dL', foods: ['Radish', 'Lemon'], impact: { high: "Jaundice risk. No heavy lifting." } },
+    'bilirubin_direct': { min: 0, max: 0.3, unit: 'mg/dL', foods: [], impact: {} },
+    'sgot': { min: 10, max: 40, unit: 'U/L', foods: ['Liver Detox'], impact: { high: "Liver/Muscle stress. Take rest days." } },
+    'sgpt': { min: 7, max: 56, unit: 'U/L', foods: ['Whole grains'], impact: { high: "Liver enzyme elevation. Avoid alcohol/painkillers." } },
+    'alkaline_phosphatase': { min: 44, max: 147, unit: 'U/L', foods: [], impact: {} },
+    'ggt': { min: 9, max: 48, unit: 'U/L', foods: [], impact: { high: "Liver stress/Alcohol use." } },
+    'total_protein': { min: 6.3, max: 8.2, unit: 'g/dL', foods: ['Lean Protein'], impact: {} },
+    'albumin': { min: 3.5, max: 5.0, unit: 'g/dL', foods: [], impact: {} },
+    'globulin': { min: 2.0, max: 3.5, unit: 'g/dL', foods: [], impact: { high: "Infection/Inflammation." } },
+    'ag_ratio': { min: 1.0, max: 2.2, unit: '', foods: [], impact: {} },
+
+    // Iron / Anemia
+    'iron': { min: 60, max: 170, unit: 'µg/dL', foods: ['Spinach'], impact: { low: "Anemia." } },
+    'tibc': { min: 240, max: 450, unit: 'µg/dL', foods: [], impact: {} },
+    'transferrin_saturation': { min: 20, max: 50, unit: '%', foods: [], impact: { low: "Iron deficiency." } },
 
     // 5. Glucose
     'glucose_fasting': { min: 70, max: 100, unit: 'mg/dL', foods: ['Fiber', 'Low GI'], impact: { high: "Diabetes risk. Cardio recommended." } },
@@ -200,7 +217,9 @@ export const MEDICAL_RANGES = {
     'amylase': { min: 30, max: 110, unit: 'U/L', foods: [], impact: { high: "Pancreas inflammation (Pancreatitis)." } },
     'lipase': { min: 0, max: 160, unit: 'U/L', foods: [], impact: { high: "Pancreas damage." } },
     'urine_pus_cells': { min: 0, max: 5, unit: '/hpf', foods: ['Cranberry'], impact: { high: "Urinary Tract Infection (UTI)." } },
-    'urine_rbc': { min: 0, max: 3, unit: '/hpf', foods: [], impact: { high: "Blood in urine. Consult urologist." } }
+    'urine_rbc': { min: 0, max: 3, unit: '/hpf', foods: [], impact: { high: "Blood in urine. Consult urologist." } },
+    'granulocyte': { min: 2, max: 8, unit: '10^3/µL', foods: [], impact: { high: "Infection/Inflammation." } },
+    'ldh': { min: 140, max: 280, unit: 'U/L', foods: [], impact: { high: "Tissue damage/Cell turnover." } }
 };
 
 export const generateDiseasePredictions = (extractedValues) => {
