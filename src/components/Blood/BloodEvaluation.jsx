@@ -217,16 +217,27 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     }
 
                     // 3. SMART FIX: Remove Reference Ranges/Intervals BEFORE extracting numbers
-                    // Example: "13.5 - 17.5" or "10-40" should be removed so they aren't mistaken for results
+                    // BUT: Only remove if they look like ranges (multiple numbers separated by dash)
+                    // Strategy: Remove patterns with BOTH numbers visible (e.g., "13.2 - 16.6")
+                    // This preserves standalone results like "7.2" or "4.5"
                     const rangePatterns = [
-                        /\d+(\.\d+)?\s*-\s*\d+(\.\d+)?/g,       // 14-16
-                        /\d+(\.\d+)?\s*to\s*\d+(\.\d+)?/gi,     // 14 to 16
-                        /[<>]\s*\d+(\.\d+)?/g                   // < 5 or > 10
+                        /(\d+\.?\d*)\s*-\s*(\d+\.?\d*)/g,        // Match "13.2 - 16.6" or "4-11" (requires both numbers)
+                        /(\d+\.?\d*)\s+to\s+(\d+\.?\d*)/gi,      // Match "14 to 16"
+                        /[<>]\s*\d+(\.\d+)?/g                    // "< 5" or "> 10"
                     ];
 
                     let cleanRowForExtraction = cleanNumbersRow;
+
+                    // Smart Range Removal: Only remove if it's clearly a range (has dash with numbers on both sides)
                     rangePatterns.forEach(pattern => {
-                        cleanRowForExtraction = cleanRowForExtraction.replace(pattern, '   '); // Replace with space to keep separation
+                        cleanRowForExtraction = cleanRowForExtraction.replace(pattern, (match) => {
+                            // If match contains a dash between two numbers, it's a range -> remove
+                            // Otherwise, keep it
+                            if (match.includes('-') && /\d/.test(match.split('-')[0]) && /\d/.test(match.split('-')[1])) {
+                                return '   '; // Remove range
+                            }
+                            return match; // Keep standalone number
+                        });
                     });
 
                     // 4. Common OCR Fixes on what's left
@@ -241,7 +252,6 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                         let bestMatchValue = null;
 
                         // Iterate through potential numbers to find a valid one
-                        // We use a for-loop instead of .find() so we can CAPTURE the corrected value
                         for (const numStr of numberMatches) {
                             let val = parseFloat(numStr);
                             if (isNaN(val)) continue;
@@ -253,25 +263,34 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                             // Check Medical Range Validity & Auto-Correct
                             const range = MEDICAL_RANGES[currentKey];
                             if (range) {
-                                // Smart Scaling: Try powers of 10 to match units (e.g., 4.5 -> 4500, or 250000 -> 2.5)
-                                const scales = [1, 10, 100, 1000, 0.1, 0.01, 0.001, 0.0001];
-                                let foundValidScale = false;
+                                // CRITICAL FIX: Disable auto-scaling for parameters that don't need it
+                                // Platelets are reported in thousands (e.g., 250 = 250,000/µL)
+                                // WBC/RBC use scientific notation in reports (handled by units)
+                                const noScaleParams = ['platelet_count', 'total_count', 'rbc_count', 'hemoglobin', 'hematocrit'];
 
-                                for (let scale of scales) {
-                                    const scaledVal = val * scale;
-
-                                    // Check if scaled value is within a "Reasonable" deviation from the medical range
-                                    // (Allowing 50% buffer below min and 50% above max for detecting abnormal-but-valid values)
-                                    // e.g. If range is 4000-11000, accept 2000-16500 as "valid detection"
-                                    if (scaledVal >= range.min * 0.2 && scaledVal <= range.max * 3.0) {
-                                        bestMatchValue = scaledVal;
-                                        foundValidScale = true;
-                                        break; // Found the best fit!
+                                if (noScaleParams.includes(currentKey)) {
+                                    // Direct range check without scaling
+                                    if (val >= range.min * 0.2 && val <= range.max * 3.0) {
+                                        bestMatchValue = val;
+                                        break;
                                     }
-                                }
+                                } else {
+                                    // Smart Scaling for other parameters
+                                    const scales = [1, 10, 100, 1000, 0.1, 0.01, 0.001, 0.0001];
+                                    let foundValidScale = false;
 
-                                if (foundValidScale) {
-                                    break; // Stop looking at other numbers in this row
+                                    for (let scale of scales) {
+                                        const scaledVal = val * scale;
+                                        if (scaledVal >= range.min * 0.2 && scaledVal <= range.max * 3.0) {
+                                            bestMatchValue = scaledVal;
+                                            foundValidScale = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (foundValidScale) {
+                                        break;
+                                    }
                                 }
                             } else {
                                 // No range defined, accept the first valid-looking number
