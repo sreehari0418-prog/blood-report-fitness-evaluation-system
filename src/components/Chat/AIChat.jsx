@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Send, Bot, User, Sparkles, Copy, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Send, Bot, User, Sparkles, Copy, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
@@ -205,6 +205,7 @@ const AIChat = ({ onBack, userProfile }) => {
     };
 
     const renderMessage = (text) => {
+        if (!text) return null;
         const lines = text.split('\n');
         return lines.map((line, i) => {
             let processedLine = line;
@@ -272,13 +273,13 @@ const AIChat = ({ onBack, userProfile }) => {
     };
 
     return (
-        <div className="chat-container gemini-theme fade-in">
+        <div className="chat-container assistant-theme fade-in">
             <div className="header-crystal">
                 <button onClick={onBack} className="back-btn-blur">
                     <ChevronLeft size={20} />
                 </button>
                 <div className="bot-info">
-                    <h2>🤖 Gemini Mini</h2>
+                    <h2>🤖 AI Assistant</h2>
                     <div className="badge-proactive">
                         <div className="pulse"></div>
                         <span>Grounding Active</span>
@@ -305,7 +306,7 @@ const AIChat = ({ onBack, userProfile }) => {
                                     {(msg.options || msg.followups).map((opt, i) => (
                                         <button
                                             key={i}
-                                            className="gemini-choice-btn"
+                                            className="assistant-choice-btn"
                                             onClick={() => {
                                                 if (msg.type === 'choice') handleFlowAction(opt);
                                                 else handleSend(null, opt);
@@ -357,7 +358,7 @@ const AIChat = ({ onBack, userProfile }) => {
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Ask Gemini Mini about health..."
+                        placeholder="Ask AI Assistant about health..."
                         className="chat-input-glass"
                         disabled={isTyping}
                     />
@@ -368,7 +369,7 @@ const AIChat = ({ onBack, userProfile }) => {
             </div>
 
             <style>{`
-                .chat-container.gemini-theme {
+                .chat-container.assistant-theme {
                     height: 100%;
                     display: flex;
                     flex-direction: column;
@@ -463,7 +464,7 @@ const AIChat = ({ onBack, userProfile }) => {
                     margin-top: 12px;
                 }
 
-                .gemini-choice-btn {
+                .assistant-choice-btn {
                     background: white;
                     border: 1.5px solid #e2e8f0;
                     padding: 10px 18px;
@@ -475,7 +476,7 @@ const AIChat = ({ onBack, userProfile }) => {
                     box-shadow: 0 2px 5px rgba(0,0,0,0.02);
                 }
 
-                .gemini-choice-btn:hover {
+                .assistant-choice-btn:hover {
                     border-color: #7209B7;
                     background: #f5f3ff;
                     transform: translateY(-2px);
