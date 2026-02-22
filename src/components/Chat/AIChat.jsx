@@ -36,6 +36,8 @@ const PREDEFINED_FLOW = {
     }
 };
 
+import { getInstantResponse } from '../../utils/predefinedQA';
+
 const AIChat = ({ onBack, userProfile }) => {
     const [messages, setMessages] = useState([
         { id: 1, text: `Hello ${userProfile?.name ? userProfile.name.split(' ')[0] : ''}! How can I help you today?`, sender: 'bot', type: 'choice', options: ["Blood Report Help", "Diet Help", "Douts"] }
@@ -154,7 +156,7 @@ const AIChat = ({ onBack, userProfile }) => {
         } catch (error) {
             console.warn('Chat Error:', error);
             return {
-                text: "I'm having trouble connecting to my brain. Please make sure the backend is running and try again!",
+                text: "I'm having trouble connecting to my AI brain. However, for general health questions, I can still provide instant answers based on my knowledge base!",
                 confidence: 0
             };
         }
@@ -170,6 +172,25 @@ const AIChat = ({ onBack, userProfile }) => {
         setInput('');
         setIsTyping(true);
 
+        // 1. Check for Instant Frontend Response (100+ Questions)
+        const instantResponse = getInstantResponse(finalInput);
+        if (instantResponse && instantResponse.confidence >= 0.6) {
+            setTimeout(() => {
+                const botMsg = {
+                    id: Date.now() + 1,
+                    text: instantResponse.text,
+                    sender: 'bot',
+                    confidence: instantResponse.confidence,
+                    intent: instantResponse.intent,
+                    mood: 'insightful'
+                };
+                setMessages(prev => [...prev, botMsg]);
+                setIsTyping(false);
+            }, 500);
+            return;
+        }
+
+        // 2. Fallback to Backend AI
         try {
             const response = await getBackendResponse(finalInput);
 
@@ -199,6 +220,7 @@ const AIChat = ({ onBack, userProfile }) => {
             setIsTyping(false);
         }
     };
+
 
     const handleQuickAction = (action) => {
         setInput(action.q);

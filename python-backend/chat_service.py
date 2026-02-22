@@ -162,6 +162,11 @@ Expert Response (JSON):"""
     def _handle_predefined_qa(self, query):
         """Match query against expert_health_qa in Knowledge Base"""
         query_clean = re.sub(r'[^\w\s]', '', query.lower()).strip()
+        query_words = set(query_clean.split())
+        
+        if not query_words:
+            return None
+
         expert_qa = self.knowledge_base.get('expert_health_qa', {})
         
         best_match = None
@@ -171,8 +176,12 @@ Expert Response (JSON):"""
             for qa in qa_list:
                 q_text = qa['question'].lower()
                 q_clean = re.sub(r'[^\w\s]', '', q_text).strip()
+                q_words = set(q_clean.split())
                 
-                # Exact match
+                if not q_words: 
+                    continue
+                
+                # 1. Exact match (after cleaning)
                 if query_clean == q_clean:
                     return {
                         'text': qa['answer'] + f"\n\n{self.knowledge_base.get('conversational_templates', {}).get('disclaimer', '')}",
@@ -181,19 +190,33 @@ Expert Response (JSON):"""
                         'method': 'knowledge_base_exact'
                     }
                 
-                # Fuzzy match: Jaccard-like keyword scoring
-                q_words = set(q_clean.split())
-                query_words = set(query_clean.split())
-                if not q_words: continue
-                
+                # 2. Advanced Fuzzy match: 
                 common = q_words.intersection(query_words)
-                score = len(common) / len(q_words)
+                if not common:
+                    continue
+
+                # Scoring logic:
+                # - Match percentage of the question (how much of the answer-key did the user hit)
+                # - Match percentage of the query (how much of what the user asked is relevant to this question)
+                # - This handles "What is creatinine?" matching "What is creatinine and why does it increase?"
+                recall = len(common) / len(q_words)
+                precision = len(common) / len(query_words)
                 
-                if score > highest_score and score >= 0.7: # Threshold for relevancy
+                # We prioritize "Overlap" (Intersection over Union approach or similar)
+                # But we give high weight to recall because users often ask short versions of long questions
+                score = (recall * 0.7) + (precision * 0.3)
+                
+                # Keyword Boost: Certain words carry more weight (medical terms)
+                medical_keywords = {'creatinine', 'hemoglobin', 'glucose', 'sugar', 'cholesterol', 'thyroid', 'platelet', 'wbc', 'rbc', 'uric', 'crp', 'urea'}
+                keyword_intersection = medical_keywords.intersection(common)
+                if keyword_intersection:
+                    score += 0.1 # Small boost for medical term matches
+                
+                if score > highest_score and score >= 0.4: # Lowered threshold from 0.7 to 0.4
                     highest_score = score
                     best_match = {
                         'text': qa['answer'] + f"\n\n{self.knowledge_base.get('conversational_templates', {}).get('disclaimer', '')}",
-                        'confidence': score,
+                        'confidence': min(score, 0.99),
                         'intent': f'predefined_{category}',
                         'method': 'knowledge_base_fuzzy'
                     }
