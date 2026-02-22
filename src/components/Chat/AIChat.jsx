@@ -1,25 +1,51 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronLeft, Send, Bot, User, Sparkles, Copy, CheckCircle2 } from 'lucide-react';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
-const QUICK_ACTIONS = [
-    { q: "Analyze my latest report", icon: "📊" },
-    { q: "Show me diet tips", icon: "🍽️" },
-    { q: "Exercise recommendations", icon: "💪" },
-    { q: "What's my hemoglobin?", icon: "🩸" }
-];
+const PREDEFINED_FLOW = {
+    blood: {
+        title: "Blood Report Help",
+        questions: [
+            { q: "How to read my blood report parameters?", a: "Blood reports list parameters (like Hemoglobin) with your result and a reference range. If your value is outside this range, it's flagged as High or Low. Always focus on the 'Status' column in our app for a quick summary." },
+            { q: "What does 'Normal Range' mean?", a: "The normal range is the set of values that 95% of healthy individuals fall into. Being slightly outside doesn't always mean a serious problem, but it's a sign to check with your doctor." },
+            { q: "Why are my Hemoglobin levels low?", a: "Low hemoglobin often indicates anemia. This can be caused by iron deficiency, vitamin B12 deficiency, or chronic conditions. It's best to look at your RBC count and Iron levels together for a better picture." },
+            { q: "What should I do if my glucose is high?", a: "High fasting glucose levels suggest pre-diabetes or diabetes. You should reduce sugary foods, increase fiber, and stay active. Monitoring your HbA1c is also recommended for long-term tracking." },
+            { q: "Is high cholesterol dangerous?", a: "High 'Bad' cholesterol (LDL) can cause plaque buildup in arteries, increasing heart risk. However, 'Good' cholesterol (HDL) helps protect your heart. Balance is key!" }
+        ]
+    },
+    diet: {
+        title: "Diet Help",
+        questions: [
+            { q: "What is a balanced diet?", a: "A balanced diet includes a mix of proteins (30%), healthy fats (30%), and complex carbohydrates (40%), along with plenty of fiber and micronutrients from fruits and vegetables." },
+            { q: "Best foods to increase Hemoglobin?", a: "Focus on iron-rich foods: Spinach, red meat, lentils, dates, and pomegranate. Tip: Eat these with Vitamin C (like lemon or citrus) to boost absorption!" },
+            { q: "How to control blood sugar through diet?", a: "Choose low Glycemic Index (GI) foods like oats, quinoa, and non-starchy vegetables. Avoid refined carbs like white rice and sugary drinks which cause sharp spikes." },
+            { q: "Foods that help lower bad cholesterol?", a: "Oats, nuts (walnuts/almonds), fatty fish, and olive oil are excellent. Avoid trans fats found in fried and processed foods." },
+            { q: "Should I take protein supplements?", a: "If you can't meet your protein needs through whole foods (eggs, chicken, paneer, sprouts), a supplement like Whey can help. But remember, food first!" }
+        ]
+    },
+    doubts: {
+        title: "Douts",
+        questions: [
+            { q: "How much water should I drink daily?", a: "A general rule is 3-4 liters per day, but it depends on your weight and activity level. If your urine is light yellow/clear, you're well hydrated!" },
+            { q: "Why am I feeling tired all the time?", a: "Persistent fatigue can be due to many things found in blood tests: Low iron (Anemia), Vitamin D/B12 deficiency, or Thyroid issues. Check your latest report!" },
+            { q: "How many hours of sleep do I need?", a: "Most adults need 7-9 hours of quality sleep. Sleep is when your body repairs muscle and regulates hormones. Consistent timing is just as important as duration." },
+            { q: "Is daily exercise necessary?", a: "Aim for at least 30 minutes of moderate activity (like brisk walking) 5 days a week. For muscle building, 3-4 days of weight training is more effective." },
+            { q: "How to reduce stress naturally?", a: "Regular exercise, 7+ hours of sleep, deep breathing exercises, and maintaining a healthy diet all contribute to lowering cortisol levels and reducing stress." }
+        ]
+    }
+};
 
 const AIChat = ({ onBack, userProfile }) => {
     const [messages, setMessages] = useState([
-        { id: 1, text: `Hello ${userProfile?.name ? userProfile.name.split(' ')[0] : ''}! I'm your AI Health Assistant powered by medical knowledge. Ask me about your blood reports, personalized diet plans, or workout advice!`, sender: 'bot', confidence: 1.0 }
+        { id: 1, text: `Hello ${userProfile?.name ? userProfile.name.split(' ')[0] : ''}! How can I help you today?`, sender: 'bot', type: 'choice', options: ["Blood Report Help", "Diet Help", "Douts"] }
     ]);
     const [input, setInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [useBackend, setUseBackend] = useState(true);
     const [copiedId, setCopiedId] = useState(null);
     const messagesEndRef = useRef(null);
     const [reports, setReports] = useState([]);
+    const [activeFlow, setActiveFlow] = useState(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,6 +63,68 @@ const AIChat = ({ onBack, userProfile }) => {
         navigator.clipboard.writeText(text);
         setCopiedId(messageId);
         setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const handleFlowAction = (option) => {
+        // Find which category this option belongs to
+        let category = null;
+        if (option === "Blood Report Help") category = 'blood';
+        else if (option === "Diet Help") category = 'diet';
+        else if (option === "Douts") category = 'doubts';
+
+        if (category) {
+            const userMsg = { id: Date.now(), text: option, sender: 'user' };
+            setMessages(prev => [...prev, userMsg]);
+            setIsTyping(true);
+
+            setTimeout(() => {
+                const botMsg = {
+                    id: Date.now() + 1,
+                    text: `Great! Here are some common questions about ${PREDEFINED_FLOW[category].title}. Which one would you like to know more about?`,
+                    sender: 'bot',
+                    type: 'choice',
+                    options: PREDEFINED_FLOW[category].questions.map(q => q.q)
+                };
+                setMessages(prev => [...prev, botMsg]);
+                setIsTyping(false);
+                setActiveFlow(category);
+            }, 800);
+            return;
+        }
+
+        // It's a sub-question
+        if (activeFlow) {
+            const selectedQ = PREDEFINED_FLOW[activeFlow].questions.find(q => q.q === option);
+            if (selectedQ) {
+                const userMsg = { id: Date.now(), text: option, sender: 'user' };
+                setMessages(prev => [...prev, userMsg]);
+                setIsTyping(true);
+
+                setTimeout(() => {
+                    const botMsg = {
+                        id: Date.now() + 1,
+                        text: selectedQ.a,
+                        sender: 'bot',
+                        confidence: 1.0,
+                        type: 'post-flow'
+                    };
+                    setMessages(prev => [...prev, botMsg]);
+                    setIsTyping(false);
+                    // Reset or allow further questions
+                    setTimeout(() => {
+                        const resetMsg = {
+                            id: Date.now() + 2,
+                            text: "Would you like to ask something else? You can type any question below or choose a topic again.",
+                            sender: 'bot',
+                            type: 'choice',
+                            options: ["Blood Report Help", "Diet Help", "Douts"]
+                        };
+                        setMessages(prev => [...prev, resetMsg]);
+                    }, 1500);
+                }, 800);
+                return;
+            }
+        }
     };
 
     const getBackendResponse = async (query) => {
@@ -64,150 +152,12 @@ const AIChat = ({ onBack, userProfile }) => {
                 metadata: data.metadata
             };
         } catch (error) {
-            console.warn('Backend unavailable, using enhanced fallback:', error);
-            setUseBackend(false);
-            return getEnhancedFallbackResponse(query);
-        }
-    };
-
-    const getEnhancedFallbackResponse = (query) => {
-        const lowerQ = query.toLowerCase();
-
-        // Enhanced Report Analysis
-        if (lowerQ.includes('analyze') || lowerQ.includes('summary') || lowerQ.includes('my report')) {
-            if (reports.length === 0) {
-                return {
-                    text: "I don't see any blood reports uploaded yet. Upload one in the Blood Evaluation section to get personalized insights!",
-                    confidence: 1.0
-                };
-            }
-            const latest = reports[0];
-            const abnormal = latest.results.filter(r => r.status !== 'Normal');
-
-            if (abnormal.length === 0) {
-                return {
-                    text: `✅ Great news! Your latest report from ${latest.date} shows all parameters within normal range. Keep up the excellent work! 🌟\n\nMaintain your healthy lifestyle:\n• Balanced diet with proteins, veggies, and whole grains\n• Regular exercise 150 mins/week\n• 7-9 hours quality sleep\n• Stay hydrated (3-4L water daily)`,
-                    confidence: 0.95
-                };
-            }
-
-            let analysis = `📊 **Analysis of Report from ${latest.date}:**\n\n`;
-            abnormal.forEach(item => {
-                analysis += `🔹 **${item.parameter}**: ${item.value} ${item.unit} (${item.status})\n`;
-
-                // Enhanced recommendations based on parameter
-                if (item.parameter.toLowerCase().includes('hemoglobin') && item.status === 'Low') {
-                    analysis += `   💡 Boost with: Spinach, red meat, lentils, dates, pomegranate\n   💊 Consider iron supplements with Vitamin C\n\n`;
-                } else if (item.parameter.toLowerCase().includes('sugar') && item.status === 'High') {
-                    analysis += `   💡 Control with: Low GI foods, avoid sweets, 30min daily walk\n   🍽️ Eat: Oats, quinoa, vegetables. Avoid: white rice, sugary drinks\n\n`;
-                } else if (item.parameter.toLowerCase().includes('cholesterol') && item.status === 'High') {
-                    analysis += `   💡 Manage with: Oats, nuts, fatty fish, olive oil\n   ❌ Avoid: Trans fats, fried foods, processed meats\n\n`;
-                }
-            });
-
-            analysis += `\n⚠️ This is AI-generated advice. Consult your doctor for medical decisions.`;
-            return { text: analysis, confidence: 0.9 };
-        }
-
-        // Specific Parameter Query
-        const parameterKeywords = ['hemoglobin', 'sugar', 'glucose', 'cholesterol', 'thyroid', 'tsh', 'vitamin'];
-        const foundParam = parameterKeywords.find(param => lowerQ.includes(param));
-
-        if (foundParam && reports.length > 0) {
-            const latest = reports[0];
-            const result = latest.results.find(r => r.parameter.toLowerCase().includes(foundParam));
-
-            if (result) {
-                let response = `📊 Your latest **${result.parameter}** is **${result.value} ${result.unit}**, which is **${result.status}**.\n\n`;
-
-                if (result.status === 'Low' && foundParam === 'hemoglobin') {
-                    response += `💡 **How to improve:**\n🍽️ Iron-rich foods: Red meat, liver, spinach, lentils, dates\n🥤 Drink: Pomegranate juice, beetroot juice\n💊 Supplements: Iron with Vitamin C for better absorption\n⚠️ Avoid tea/coffee with meals`;
-                } else if (result.status === 'High' && (foundParam === 'sugar' || foundParam === 'glucose')) {
-                    response += `💡 **Management tips:**\n🍽️ Low GI foods: Oats, quinoa, brown rice, vegetables\n❌ Avoid: White rice, sugary drinks, pastries\n🏃 Exercise: 30 mins daily walking after meals\n📊 Monitor blood sugar regularly`;
-                }
-
-                return { text: response, confidence: 0.95 };
-            }
-        }
-
-        // Diet Recommendations
-        if (lowerQ.includes('diet') || lowerQ.includes('food') || lowerQ.includes('eat')) {
-            const diseases = userProfile?.diseases?.toLowerCase() || '';
-
-            if (diseases.includes('diabetes')) {
-                return {
-                    text: `🍽️ **Diabetes-Friendly Diet Plan:**\n\n✅ **Include:**\n• Low GI foods: Steel-cut oats, quinoa, barley\n• Vegetables: Broccoli, spinach, cauliflower\n• Proteins: Chicken, fish, tofu, eggs\n• Low GI fruits: Berries, apples, pears\n\n❌ **Avoid:**\n• White rice, white bread, pastries\n• Sugary drinks and sodas\n• High GI fruits: Mango, pineapple, watermelon\n• Fried and processed foods\n\n⏰ Eat small meals every 3-4 hours\n\n⚠️ Consult your doctor for personalized advice`,
-                    confidence: 0.9
-                };
-            }
-
+            console.warn('Chat Error:', error);
             return {
-                text: `🍽️ **Balanced Diet Guidelines:**\n\n✅ **Proteins:** Eggs, chicken, fish, paneer, lentils (1.2g per kg body weight)\n✅ **Carbs:** Brown rice, oats, quinoa, sweet potato\n✅ **Healthy Fats:** Nuts, seeds, olive oil, avocado\n✅ **Fiber:** Vegetables, fruits, whole grains (25-30g daily)\n\n💡 **Tips:**\n• Eat rainbow (colorful vegetables)\n• Stay hydrated (3-4L water)\n• Avoid processed foods\n• Cook at home when possible`,
-                confidence: 0.85
+                text: "I'm having trouble connecting to my brain. Please make sure the backend is running and try again!",
+                confidence: 0
             };
         }
-
-        // Exercise Recommendations
-        if (lowerQ.includes('exercise') || lowerQ.includes('workout') || lowerQ.includes('gym') || lowerQ.includes('muscle')) {
-            if (lowerQ.includes('muscle') || lowerQ.includes('build')) {
-                return {
-                    text: `💪 **Muscle Building Plan:**\n\n🏋️ **Workout:**\n• 4-6 days/week progressive resistance training\n• Focus on compound movements: Squats, deadlifts, bench press\n• 8-12 reps, 3-4 sets per exercise\n• 48 hours rest between same muscle groups\n\n🍽️ **Nutrition:**\n• Protein: 1.6-2.2g per kg body weight\n• Carbs: 4-6g per kg (for energy)\n• Calorie surplus: 300-500 kcal/day\n• Post-workout protein within 2 hours\n\n💤 **Recovery:** 7-8 hours sleep essential!`,
-                    confidence: 0.9
-                };
-            } else if (lowerQ.includes('lose') || lowerQ.includes('weight loss')) {
-                return {
-                    text: `🏃 **Weight Loss Plan:**\n\n🏋️ **Exercise:**\n• 5-6 days/week\n• Mix: 60% cardio + 40% strength training\n• Zone 2 cardio: 150-300 mins/week\n• HIIT: 2-3 times/week (20 mins)\n\n🍽️ **Nutrition:**\n• Calorie deficit: 500 kcal/day for 0.5kg/week loss\n• High protein: 1.2-1.6g/kg (preserve muscle)\n• High fiber: 25-30g daily (keeps you full)\n• Hydration: 3-4 liters water daily\n\n📊 Track progress weekly, not daily!`,
-                    confidence: 0.9
-                };
-            }
-
-            return {
-                text: `💪 **General Fitness Plan:**\n\n✅ **Cardio:** 150 mins moderate or 75 mins vigorous per week\n✅ **Strength:** 2-3 days/week full body\n✅ **Flexibility:** Yoga or stretching 2x/week\n\n🍽️ **Balanced nutrition:** 40% carbs, 30% protein, 30% fats\n💤 **Recovery:** 7-9 hours sleep\n💧 **Hydration:** 3-4L water daily`,
-                confidence: 0.85
-            };
-        }
-
-        // Nutrition Info
-        const nutritionDB = {
-            'chicken': { protein: 31, carbs: 0, fat: 3.6, calories: 165 },
-            'eggs': { protein: 13, carbs: 1.1, fat: 11, calories: 155 },
-            'paneer': { protein: 18, carbs: 1.2, fat: 20, calories: 265 },
-            'oats': { protein: 17, carbs: 66, fat: 7, calories: 389 },
-            'banana': { protein: 1.1, carbs: 23, fat: 0.3, calories: 89 }
-        };
-
-        for (const [food, nutrition] of Object.entries(nutritionDB)) {
-            if (lowerQ.includes(food)) {
-                return {
-                    text: `🥗 **Nutrition Facts: ${food.charAt(0).toUpperCase() + food.slice(1)}** (per 100g)\n\n• Protein: ${nutrition.protein}g\n• Carbs: ${nutrition.carbs}g\n• Fat: ${nutrition.fat}g\n• Calories: ${nutrition.calories} kcal\n\n💡 Great for ${nutrition.protein > 20 ? 'muscle building' : 'balanced nutrition'}!`,
-                    confidence: 1.0
-                };
-            }
-        }
-
-        // Sleep
-        if (lowerQ.includes('sleep')) {
-            return {
-                text: `💤 **Sleep is Non-Negotiable!**\n\n🎯 Aim for 7-9 hours of quality sleep\n\n✅ **Tips for Better Sleep:**\n• Consistent schedule (same time daily)\n• Avoid screens 1 hour before bed\n• Keep bedroom cool (18-20°C)\n• No caffeine after 2 PM\n• Light dinner 2-3 hours before bed\n\n💡 Sleep affects: Recovery, muscle growth, metabolism, mood, immunity`,
-                confidence: 0.9
-            };
-        }
-
-        // Water/Hydration
-        if (lowerQ.includes('water') || lowerQ.includes('hydrat')) {
-            const weight = userProfile?.weight || 70;
-            const waterIntake = Math.round(weight * 0.033 * 10) / 10;
-            return {
-                text: `💧 **Stay Hydrated!**\n\n🎯 Based on your weight (${weight}kg), aim for **${waterIntake}L** of water daily\n\n✅ **Benefits:**\n• Improved metabolism\n• Better athletic performance\n• Clearer skin\n• Enhanced kidney function\n• Better focus and energy\n\n💡 Drink more if exercising or in hot weather!`,
-                confidence: 0.95
-            };
-        }
-
-        // Default response
-        return {
-            text: `I'm here to help with your health! Try asking:\n\n📊 "Analyze my latest report"\n🩸 "What's my hemoglobin level?"\n🍽️ "Show me a diet plan for diabetes"\n💪 "How to build muscle?"\n🥗 "Nutrition in chicken"\n💧 "How much water should I drink?"\n\n${!useBackend ? '\n⚠️ Note: Backend is offline, using local intelligence.' : ''}`,
-            confidence: 0.6
-        };
     };
 
     const handleSend = async (e) => {
@@ -220,9 +170,7 @@ const AIChat = ({ onBack, userProfile }) => {
         setIsTyping(true);
 
         try {
-            const response = useBackend
-                ? await getBackendResponse(input)
-                : getEnhancedFallbackResponse(input);
+            const response = await getBackendResponse(input);
 
             setTimeout(() => {
                 const botMsg = {
@@ -259,7 +207,6 @@ const AIChat = ({ onBack, userProfile }) => {
                     <ChevronLeft size={24} />
                 </button>
                 <h2>🤖 AI Health Assistant</h2>
-                {!useBackend && <span className="offline-badge">Local Mode</span>}
             </div>
 
             <div className="chat-window">
@@ -275,6 +222,22 @@ const AIChat = ({ onBack, userProfile }) => {
                                     </React.Fragment>
                                 ))}
                             </div>
+
+                            {msg.type === 'choice' && (
+                                <div className="options-container">
+                                    {msg.options.map((opt, i) => (
+                                        <button
+                                            key={i}
+                                            className="choice-btn"
+                                            onClick={() => handleFlowAction(opt)}
+                                            disabled={isTyping}
+                                        >
+                                            {opt}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+
                             {msg.sender === 'bot' && msg.confidence && (
                                 <div className="message-actions">
                                     <span className="confidence-badge">
@@ -306,20 +269,6 @@ const AIChat = ({ onBack, userProfile }) => {
             </div>
 
             <div className="input-section">
-                <div className="quick-actions-row">
-                    {QUICK_ACTIONS.map((action, idx) => (
-                        <button
-                            key={idx}
-                            className="quick-action-btn"
-                            onClick={() => handleQuickAction(action)}
-                            disabled={isTyping}
-                        >
-                            <span className="action-icon">{action.icon}</span>
-                            <span className="action-text">{action.q}</span>
-                        </button>
-                    ))}
-                </div>
-
                 <form onSubmit={handleSend} className="input-form">
                     <input
                         type="text"
@@ -457,52 +406,46 @@ const AIChat = ({ onBack, userProfile }) => {
             color: var(--color-primary);
         }
 
+        .options-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .choice-btn {
+            background: white;
+            border: 2px solid var(--color-primary);
+            color: var(--color-primary);
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            flex: 1 1 calc(50% - 8px);
+            min-width: 120px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .choice-btn:hover:not(:disabled) {
+            background: var(--color-primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
+        }
+        .choice-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .input-section {
             display: flex;
             flex-direction: column;
             gap: 12px;
             flex-shrink: 0;
-        }
-
-        .quick-actions-row {
-           display: flex;
-           overflow-x: auto;
-           gap: 8px;
-           padding-bottom: 5px;
-           scrollbar-width: none;
-        }
-        .quick-actions-row::-webkit-scrollbar {
-            display: none;
-        }
-        .quick-action-btn {
-           white-space: nowrap;
-           background: white;
-           border: 1.5px solid var(--color-primary);
-           color: var(--color-primary);
-           padding: 8px 14px;
-           border-radius: 20px;
-           font-size: 12px;
-           transition: all 0.2s;
-           display: flex;
-           align-items: center;
-           gap: 6px;
-           font-weight: 500;
-        }
-        .quick-action-btn:hover:not(:disabled) {
-           background: var(--color-primary);
-           color: white;
-           transform: translateY(-1px);
-           box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
-        }
-        .quick-action-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        .action-icon {
-            font-size: 14px;
-        }
-        .action-text {
-            font-size: 11px;
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid #e2e8f0;
         }
 
         .input-form {

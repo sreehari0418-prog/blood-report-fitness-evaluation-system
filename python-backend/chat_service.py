@@ -7,12 +7,28 @@ import json
 import os
 from datetime import datetime
 import re
+import google.generativeai as genai
+
+# Hardcoded fallback for Render free tier limits
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyAoVO1hSasH1tjDV-hAk5xVyX86jG6DPoE")
 
 class HealthChatBot:
     def __init__(self, knowledge_base_path='knowledge_base.json'):
-        """Initialize the chatbot with medical knowledge base"""
+        """Initialize the chatbot with medical knowledge base and Gemini"""
         self.knowledge_base = self._load_knowledge_base(knowledge_base_path)
         self.conversation_context = []
+        self._setup_gemini()
+
+    def _setup_gemini(self):
+        """Configure Gemini AI"""
+        try:
+            genai.configure(api_key=GEMINI_API_KEY)
+            self.model = genai.GenerativeModel('gemini-1.5-flash')
+            self.ai_enabled = True
+            print("✅ Gemini AI Chatbot initialized")
+        except Exception as e:
+            print(f"⚠️ Gemini AI initialization failed: {e}")
+            self.ai_enabled = False
         
     def _load_knowledge_base(self, path):
         """Load the medical knowledge base"""
@@ -26,38 +42,80 @@ class HealthChatBot:
     def get_response(self, query, user_profile=None, blood_reports=None, conversation_history=None):
         """
         Generate intelligent response based on query and context
-        
-        Args:
-            query (str): User's question
-            user_profile (dict): User profile data (age, gender, weight, diseases, allergies)
-            blood_reports (list): List of blood report objects
-            conversation_history (list): Recent conversation messages
-            
-        Returns:
-            dict: Response with text, confidence, and metadata
         """
         query_lower = query.lower().strip()
         
         # Update conversation context
         if conversation_history:
-            self.conversation_context = conversation_history[-5:]  # Keep last 5 messages
+            self.conversation_context = conversation_history[-5:]
         
-        # Extract entities from query
+        # Try AI Response first if enabled
+        if self.ai_enabled:
+            ai_res = self._get_ai_response(query, user_profile, blood_reports)
+            if ai_res:
+                return ai_res
+
+        # FALLBACK: Original Rule-Based Logic
         entities = self._extract_entities(query_lower)
-        
-        # Determine intent
         intent = self._determine_intent(query_lower, entities)
         
-        # Generate response based on intent
-        response = self._generate_response(
+        return self._generate_response(
             intent=intent,
             query=query_lower,
             entities=entities,
             user_profile=user_profile,
             blood_reports=blood_reports
         )
-        
-        return response
+
+    def _get_ai_response(self, query, user_profile, blood_reports):
+        """Use Gemini to generate a response"""
+        try:
+            # Build Context
+            profile_str = json.dumps(user_profile, indent=2) if user_profile else "Not provided"
+            
+            reports_summary = ""
+            if blood_reports:
+                for r in blood_reports[:2]: # Last 2 reports
+                    reports_summary += f"Report Date: {r.get('date')}\nResults: {json.dumps(r.get('results'), indent=2)}\n\n"
+            else:
+                reports_summary = "No reports uploaded."
+
+            history_str = ""
+            for msg in self.conversation_context:
+                history_str += f"{msg['sender']}: {msg['text']}\n"
+
+            prompt = f"""
+You are an expert AI Health & Fitness Assistant. Your goal is to provide accurate, helpful, and encouraging advice.
+
+CONTEXT:
+User Profile: {profile_str}
+Blood Reports: {reports_summary}
+Recent History:
+{history_str}
+
+USER QUESTION: {query}
+
+INSTRUCTIONS:
+1. Use the provided blood reports and profile to give PERSONALIZED advice.
+2. If the user asks general health or natural questions (e.g., "how to sleep better", "benefits of eggs"), answer them comprehensively using your medical knowledge.
+3. Be professional but empathetic.
+4. IMPORTANT: Always include a small disclaimer at the end that you are an AI and they should consult a doctor.
+5. Use markdown formatting (bold, bullet points) for readability.
+6. Keep the response concise but informative.
+7. Return your response in a clear text format.
+
+Your Response:"""
+
+            response = self.model.generate_content(prompt)
+            return {
+                'text': response.text,
+                'confidence': 0.95,
+                'intent': 'generative_ai',
+                'method': 'gemini_pro'
+            }
+        except Exception as e:
+            print(f"❌ Gemini generation failed: {e}")
+            return None
     
     def _extract_entities(self, query):
         """Extract medical entities from query"""
