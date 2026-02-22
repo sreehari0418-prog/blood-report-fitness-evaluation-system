@@ -110,9 +110,10 @@ CRITICAL INSTRUCTIONS:
      * Phase 1 (Diet): List specific foods from the KB "low_recommendations" or "high_recommendations".
      * Phase 2 (Lifestyle): Suggest lifestyle changes or exercises from the KB.
      * Phase 3 (Supplements/Next Steps): Mention supplements or medical follow-ups from the KB.
-3. FORMATTING: Use Markdown (Bold headers, bullet points, numbered lists) for a premium look.
-4. TONE: Professional, diagnostic, and highly specific. Do NOT give vague advice. Use the exact data from the KB.
-5. DISCLAIMER: Always end with: "⚠️ This is AI-guided analysis based on your reports. Please consult your physician for clinical diagnosis."
+3. NUTRITION & SUPERFOODS: When a user asks about fruits (e.g., "is apple good for hemoglobin?"), look for the specific item in the `superfoods_and_fruits` section of the KB. Provide the "benefits" and the "hemoglobin_role" specified there.
+4. FORMATTING: Use Markdown (Bold headers, bullet points, numbered lists) for a premium look.
+5. TONE: Professional, diagnostic, and highly specific. Do NOT give vague advice. Use the exact data from the KB.
+6. DISCLAIMER: Always end with: "⚠️ This is AI-guided analysis based on your reports. Please consult your physician for clinical diagnosis."
 
 Expert Response:"""
 

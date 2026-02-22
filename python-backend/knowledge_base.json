@@ -685,6 +685,139 @@
             }
         }
     },
+    "superfoods_and_fruits": {
+        "apple": {
+            "benefits": [
+                "Rich in pectin (fiber) which lowers bad cholesterol",
+                "High in Vitamin C to boost immunity",
+                "Contains polyphenols that help regulate blood sugar",
+                "Assists in weight management"
+            ],
+            "hemoglobin_role": "Contains small amounts of iron and vitamin C which aids iron absorption from other foods.",
+            "best_for": [
+                "Weight Loss",
+                "Heart Health",
+                "Diabetes Management"
+            ]
+        },
+        "pomegranate": {
+            "benefits": [
+                "Powerful antioxidant properties (punicalagins)",
+                "Helps reduce inflammation",
+                "Improves blood flow and heart health"
+            ],
+            "hemoglobin_role": "Top fruit for boosting Hemoglobin. High in iron, vitamins A, C, and E. Increases RBC count directly.",
+            "best_for": [
+                "Anemia",
+                "High Blood Pressure",
+                "Post-workout Recovery"
+            ]
+        },
+        "beetroot": {
+            "benefits": [
+                "High in nitrates which lower blood pressure",
+                "Boosts athletic performance and stamina",
+                "Natural detoxifier for the liver"
+            ],
+            "hemoglobin_role": "Excellent for raising Hemoglobin. It repairs and reactivates RBCs, increasing oxygen supply to the body.",
+            "best_for": [
+                "Low Hemoglobin",
+                "Athletes",
+                "Hypertension"
+            ]
+        },
+        "spinach": {
+            "benefits": [
+                "High in Vitamin K (bone health)",
+                "Rich in lutein for eye health",
+                "Packed with magnesium"
+            ],
+            "hemoglobin_role": "The gold standard plant-based iron source. Best taken with citrus to maximize absorption.",
+            "best_for": [
+                "Bone Health",
+                "Eye Vision",
+                "Anemia"
+            ]
+        },
+        "papaya": {
+            "benefits": [
+                "Contains papain enzyme which aids protein digestion",
+                "High in Vitamin A and Lycopene",
+                "Good for skin glow"
+            ],
+            "hemoglobin_role": "Contains folic acid which is essential for RBC production. Known to help boost Platelet count.",
+            "best_for": [
+                "Digestion",
+                "Platelet Support",
+                "Skin Health"
+            ]
+        },
+        "lemon_and_citrus": {
+            "benefits": [
+                "Highest source of Vitamin C",
+                "Prevents kidney stones",
+                "Alkalizes the body"
+            ],
+            "hemoglobin_role": "CRITICAL: Vitamin C is required to absorb non-heme (plant) iron. Always squeeze lemon on spinach or lentils.",
+            "best_for": [
+                "Immunity",
+                "Iron Absorption",
+                "Skin Health"
+            ]
+        },
+        "almonds_and_walnuts": {
+            "benefits": [
+                "Healthy omega-3 fatty acids",
+                "Boosts brain function and memory",
+                "Reduces hunger cravings"
+            ],
+            "hemoglobin_role": "Provides copper and vitamins that assist in hemoglobin synthesis.",
+            "best_for": [
+                "Brain Health",
+                "Cholesterol Management",
+                "Heart Health"
+            ]
+        },
+        "banana": {
+            "benefits": [
+                "Excellent source of potassium for nerve function",
+                "Instant energy booster",
+                "Helps manage muscle cramps"
+            ],
+            "hemoglobin_role": "Contains Vitamin B6 and folate which are vital for healthy blood cells.",
+            "best_for": [
+                "Pre-workout",
+                "Digestion",
+                "Heart Rhythm"
+            ]
+        },
+        "berries": {
+            "benefits": [
+                "Highest antioxidant content among fruits",
+                "Improves insulin sensitivity",
+                "Protects cells from damage"
+            ],
+            "hemoglobin_role": "Supports healthy blood vessels and circulatory health.",
+            "best_for": [
+                "Anti-aging",
+                "Diabetes",
+                "Inflammation"
+            ]
+        },
+        "guava": {
+            "benefits": [
+                "4x more Vitamin C than oranges",
+                "Extremely high fiber for constipation",
+                "Low GI fruit"
+            ],
+            "hemoglobin_role": "Massive Vitamin C content ensures all iron from your diet is absorbed effectively.",
+            "best_for": [
+                "Weight Loss",
+                "Diabetes",
+                "Immunity"
+            ]
+        }
+    },
     "conversational_templates": {
         "greetings": [
             "Hello! I'm your Health Assistant. How can I help you today?",
