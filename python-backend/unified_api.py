@@ -350,13 +350,13 @@ def analyze_report():
             return jsonify({"error": str(e)}), 500
 
 # ============================================================================
-# AWS TEXTRACT PDF EXTRACTION ENDPOINT
+# GEMINI VISION EXTRACTION ENDPOINTS (PDF & IMAGES)
 # ============================================================================
 
 @app.route('/api/extract-pdf', methods=['POST'])
-def extract_pdf_textract():
+def extract_pdf_gemini():
     """
-    Cloud-based PDF text extraction using AWS Textract.
+    Cloud-based PDF text extraction using Gemini Vision.
     Accepts: multipart/form-data with 'file' (PDF)
     Returns: JSON { success, text, pages, method }
     """
@@ -378,19 +378,52 @@ def extract_pdf_textract():
         result = extract_text_from_pdf_bytes(pdf_bytes)
 
         if result['success']:
-            print(f"✅ Textract extracted {len(result['text'])} chars from {result['pages']} page(s)")
+            print(f"✅ Gemini extracted {len(result['text'])} chars from {result['pages']} page(s)")
             return jsonify(result), 200
         else:
-            print(f"❌ Textract failed: {result['error']}")
+            print(f"❌ Gemini failed: {result['error']}")
             return jsonify(result), 500
 
-    except ImportError:
-        return jsonify({
-            'success': False,
-            'error': 'AWS Textract service not available. Run: pip install boto3 PyMuPDF'
-        }), 503
     except Exception as e:
         print(f"❌ /api/extract-pdf error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/extract-image', methods=['POST'])
+def extract_image_gemini():
+    """
+    Cloud-based Image text extraction using Gemini Vision.
+    Accepts: multipart/form-data with 'file' (Image)
+    Returns: JSON { success, text, method }
+    """
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if not file:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    try:
+        from gemini_extraction_service import extract_text_from_image_bytes, _configure_gemini
+        img_bytes = file.read()
+        print(f"✨ Received Image ({len(img_bytes)} bytes) → Sending to Gemini Vision...")
+
+        model = _configure_gemini()
+        text = extract_text_from_image_bytes(img_bytes, model)
+
+        if text:
+            print(f"✅ Gemini extracted {len(text)} chars from image")
+            return jsonify({
+                'success': True,
+                'text': text,
+                'method': 'gemini_vision'
+            }), 200
+        else:
+            print(f"❌ Gemini returned empty text from image")
+            return jsonify({'success': False, 'error': 'No text detected in image'}), 500
+
+    except Exception as e:
+        print(f"❌ /api/extract-image error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

@@ -514,7 +514,35 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         setStatusText('Preprocessing Image...');
 
         try {
-            // OPTION 1: Try Backend Enhanced OCR (ML Correction + Table Detection)
+            // ── STRATEGY 1: Gemini Vision (Cloud — highest accuracy) ──────────────
+            // Now supported for both PDF and Images in Expert mode!
+            if (analysisMode === 'expert') {
+                try {
+                    setStatusText('✨ Sending to Gemini AI for extraction...');
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/extract-image`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success && result.text && result.text.length > 50) {
+                            console.log(`✅ Gemini Vision extracted ${result.text.length} chars from image`);
+                            setStatusText(`✅ Cloud extraction done! Analyzing...`);
+                            await new Promise(r => setTimeout(r, 800));
+                            processTextData(result.text);
+                            return; // Success!
+                        }
+                    }
+                } catch (cloudErr) {
+                    console.warn("🔄 Gemini Cloud unavailable for image, falling back:", cloudErr);
+                }
+            }
+
+            // OPTION 2: Try Backend Enhanced OCR (ML Correction + Table Detection)
             // Checks: Must be in ML Mode AND not a PDF
             if (analysisMode === 'ml') {
                 try {
