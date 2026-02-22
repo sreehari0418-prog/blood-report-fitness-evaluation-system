@@ -49,7 +49,12 @@ class HealthChatBot:
         if conversation_history:
             self.conversation_context = conversation_history[-5:]
         
-        # Try AI Response first if enabled
+        # Try Predefined Q&A First (Prioritize JSON expert answers)
+        predefined_res = self._handle_predefined_qa(query)
+        if predefined_res:
+            return predefined_res
+
+        # Try AI Response next if enabled
         if self.ai_enabled:
             ai_res = self._get_ai_response(query, user_profile, blood_reports)
             if ai_res:
@@ -153,6 +158,47 @@ Expert Response (JSON):"""
         except Exception as e:
             print(f"❌ Gemini expert generation failed: {e}")
             return None
+
+    def _handle_predefined_qa(self, query):
+        """Match query against expert_health_qa in Knowledge Base"""
+        query_clean = re.sub(r'[^\w\s]', '', query.lower()).strip()
+        expert_qa = self.knowledge_base.get('expert_health_qa', {})
+        
+        best_match = None
+        highest_score = 0
+        
+        for category, qa_list in expert_qa.items():
+            for qa in qa_list:
+                q_text = qa['question'].lower()
+                q_clean = re.sub(r'[^\w\s]', '', q_text).strip()
+                
+                # Exact match
+                if query_clean == q_clean:
+                    return {
+                        'text': qa['answer'] + f"\n\n{self.knowledge_base.get('conversational_templates', {}).get('disclaimer', '')}",
+                        'confidence': 1.0,
+                        'intent': f'predefined_{category}',
+                        'method': 'knowledge_base_exact'
+                    }
+                
+                # Fuzzy match: Jaccard-like keyword scoring
+                q_words = set(q_clean.split())
+                query_words = set(query_clean.split())
+                if not q_words: continue
+                
+                common = q_words.intersection(query_words)
+                score = len(common) / len(q_words)
+                
+                if score > highest_score and score >= 0.7: # Threshold for relevancy
+                    highest_score = score
+                    best_match = {
+                        'text': qa['answer'] + f"\n\n{self.knowledge_base.get('conversational_templates', {}).get('disclaimer', '')}",
+                        'confidence': score,
+                        'intent': f'predefined_{category}',
+                        'method': 'knowledge_base_fuzzy'
+                    }
+        
+        return best_match
     
     def _extract_entities(self, query):
         """Extract medical entities from query"""
