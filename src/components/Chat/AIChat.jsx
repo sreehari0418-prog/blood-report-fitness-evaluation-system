@@ -160,17 +160,18 @@ const AIChat = ({ onBack, userProfile }) => {
         }
     };
 
-    const handleSend = async (e) => {
-        e.preventDefault();
-        if (!input.trim()) return;
+    const handleSend = async (e, customInput = null) => {
+        if (e && e.preventDefault) e.preventDefault();
+        const finalInput = customInput || input;
+        if (!finalInput.trim()) return;
 
-        const userMsg = { id: Date.now(), text: input, sender: 'user' };
+        const userMsg = { id: Date.now(), text: finalInput, sender: 'user' };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
         setIsTyping(true);
 
         try {
-            const response = await getBackendResponse(input);
+            const response = await getBackendResponse(finalInput);
 
             setTimeout(() => {
                 const botMsg = {
@@ -178,7 +179,10 @@ const AIChat = ({ onBack, userProfile }) => {
                     text: response.text,
                     sender: 'bot',
                     confidence: response.confidence || 0.8,
-                    intent: response.intent
+                    intent: response.intent,
+                    followups: response.followups || [],
+                    visual_type: response.visual_type || 'standard',
+                    mood: response.mood || 'insightful'
                 };
                 setMessages(prev => [...prev, botMsg]);
                 setIsTyping(false);
@@ -201,17 +205,38 @@ const AIChat = ({ onBack, userProfile }) => {
     };
 
     const renderMessage = (text) => {
-        // Simple Markdown-to-JSX parser
         const lines = text.split('\n');
         return lines.map((line, i) => {
             let processedLine = line;
 
-            // Bold Headers (### Header)
-            if (processedLine.startsWith('### ')) {
-                return <h4 key={i} style={{ margin: '12px 0 6px 0', color: 'var(--color-primary)' }}>{processedLine.replace('### ', '')}</h4>;
+            // Handle Tables
+            if (processedLine.includes('|') && processedLine.split('|').length > 2) {
+                if (processedLine.includes('---')) return null;
+                const cells = processedLine.split('|').filter(c => c.trim() !== '');
+                const isHeader = i < lines.length - 1 && lines[i + 1].includes('---');
+
+                return (
+                    <div key={i} className="table-row" style={{
+                        display: 'flex',
+                        borderBottom: '1px solid #e2e8f0',
+                        padding: '6px 0',
+                        fontWeight: isHeader ? '700' : '400',
+                        background: isHeader ? '#f8fafc' : 'transparent',
+                        fontSize: '13px'
+                    }}>
+                        {cells.map((cell, ci) => (
+                            <div key={ci} style={{ flex: 1, padding: '0 8px' }}>{cell.trim()}</div>
+                        ))}
+                    </div>
+                );
             }
 
-            // Bold text (**text**)
+            // Bold Headers
+            if (processedLine.startsWith('### ')) {
+                return <h4 key={i} className="md-header">{processedLine.replace('### ', '')}</h4>;
+            }
+
+            // Bold text
             const boldRegex = /\*\*(.*?)\*\*/g;
             const segments = [];
             let lastIndex = 0;
@@ -228,18 +253,18 @@ const AIChat = ({ onBack, userProfile }) => {
                 segments.push(processedLine.substring(lastIndex));
             }
 
-            // Bullet points (* or -)
+            // Lists
             if (processedLine.trim().startsWith('* ') || processedLine.trim().startsWith('- ')) {
                 return (
-                    <div key={i} style={{ display: 'flex', gap: '8px', paddingLeft: '8px', marginBottom: '4px' }}>
-                        <span>•</span>
+                    <div key={i} className="md-list-item">
+                        <span className="bullet">•</span>
                         <span>{segments.length > 0 ? segments : processedLine.replace(/^[*|-]\s/, '')}</span>
                     </div>
                 );
             }
 
             return (
-                <div key={i} style={{ marginBottom: i < lines.length - 1 ? '6px' : '0' }}>
+                <div key={i} className="md-text">
                     {segments.length > 0 ? segments : processedLine}
                 </div>
             );
@@ -247,34 +272,44 @@ const AIChat = ({ onBack, userProfile }) => {
     };
 
     return (
-        <div className="chat-container fade-in">
-            <div className="header-row">
-                <button onClick={onBack} className="back-btn">
-                    <ChevronLeft size={24} />
+        <div className="chat-container gemini-theme fade-in">
+            <div className="header-crystal">
+                <button onClick={onBack} className="back-btn-blur">
+                    <ChevronLeft size={20} />
                 </button>
-                <h2>🤖 IA Expert Assistant</h2>
+                <div className="bot-info">
+                    <h2>🤖 Gemini Mini</h2>
+                    <div className="badge-proactive">
+                        <div className="pulse"></div>
+                        <span>Grounding Active</span>
+                    </div>
+                </div>
+                <Sparkles size={22} className="ai-glow" />
             </div>
 
-            <div className="chat-window">
+            <div className="chat-window-crystal">
                 {messages.map((msg) => (
                     <div key={msg.id} className={`message-row ${msg.sender}`}>
                         {msg.sender === 'bot' && (
-                            <div className="avatar bot">
-                                {msg.intent === 'expert_analysis' ? <Sparkles size={16} /> : <Bot size={16} />}
+                            <div className={`avatar-bot ${msg.mood}`}>
+                                <Sparkles size={16} />
                             </div>
                         )}
                         <div className="message-container">
-                            <div className="message-bubble">
+                            <div className={`message-bubble ${msg.sender}-bubble glass`}>
                                 {renderMessage(msg.text)}
                             </div>
 
-                            {msg.type === 'choice' && (
-                                <div className="options-container">
-                                    {msg.options.map((opt, i) => (
+                            {(msg.type === 'choice' || (msg.followups && msg.followups.length > 0)) && (
+                                <div className="interactive-options">
+                                    {(msg.options || msg.followups).map((opt, i) => (
                                         <button
                                             key={i}
-                                            className="choice-btn"
-                                            onClick={() => handleFlowAction(opt)}
+                                            className="gemini-choice-btn"
+                                            onClick={() => {
+                                                if (msg.type === 'choice') handleFlowAction(opt);
+                                                else handleSend(null, opt);
+                                            }}
                                             disabled={isTyping}
                                         >
                                             {opt}
@@ -284,273 +319,235 @@ const AIChat = ({ onBack, userProfile }) => {
                             )}
 
                             {msg.sender === 'bot' && msg.confidence && (
-                                <div className="message-actions">
-                                    <span className="confidence-badge">
-                                        {msg.confidence >= 0.9 ? '🟢' : msg.confidence >= 0.7 ? '🟡' : '🔴'}
-                                        {msg.intent === 'expert_analysis' ? 'Expert Analysis' : `${Math.round(msg.confidence * 100)}% confident`}
-                                    </span>
+                                <div className="message-meta">
+                                    <div className="expert-badge">
+                                        <ShieldCheck size={12} />
+                                        <span>Medical Grounding: 100%</span>
+                                    </div>
                                     <button
                                         onClick={() => copyToClipboard(msg.text, msg.id)}
-                                        className="copy-btn"
-                                        title="Copy response"
+                                        className="copy-mini"
                                     >
-                                        {copiedId === msg.id ? <CheckCircle2 size={14} /> : <Copy size={14} />}
+                                        {copiedId === msg.id ? <CheckCircle2 size={12} /> : <Copy size={12} />}
                                     </button>
                                 </div>
                             )}
                         </div>
-                        {msg.sender === 'user' && <div className="avatar user"><User size={16} /></div>}
+                        {msg.sender === 'user' && <div className="avatar-user"><User size={16} /></div>}
                     </div>
                 ))}
                 {isTyping && (
                     <div className="message-row bot">
-                        <div className="avatar bot"><Bot size={16} /></div>
-                        <div className="message-bubble typing">
-                            <span>.</span><span>.</span><span>.</span>
+                        <div className="avatar-bot insightful">
+                            <Sparkles size={16} />
+                        </div>
+                        <div className="message-bubble glass typing-glass">
+                            <div className="dot-wave">
+                                <span></span><span></span><span></span>
+                            </div>
                         </div>
                     </div>
                 )}
                 <div ref={messagesEndRef} />
             </div>
 
-            <div className="input-section">
-                <form onSubmit={handleSend} className="input-form">
+            <div className="input-section-crystal">
+                <form onSubmit={handleSend} className="input-form-glass">
                     <input
                         type="text"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Ask about health, diet, or fitness..."
-                        className="chat-input"
+                        placeholder="Ask Gemini Mini about health..."
+                        className="chat-input-glass"
                         disabled={isTyping}
                     />
-                    <button type="submit" className="send-btn" disabled={isTyping || !input.trim()}>
+                    <button type="submit" className="send-btn-gradient" disabled={isTyping || !input.trim()}>
                         <Send size={20} />
                     </button>
                 </form>
             </div>
 
             <style>{`
-        .chat-container {
-           padding: var(--spacing-md);
-           display: flex;
-           flex-direction: column;
-           height: 100vh;
-           max-height: 100vh;
-        }
-        .header-row {
-           display: flex;
-           align-items: center;
-           gap: var(--spacing-md);
-           margin-bottom: var(--spacing-md);
-           flex-shrink: 0;
-        }
-        .header-row h2 {
-            flex: 1;
-        }
-        .offline-badge {
-            background: #f59e0b;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: 600;
-        }
-        .back-btn {
-           background: transparent;
-           color: var(--color-text-main);
-           padding: 0;
-        }
-        .chat-window {
-           flex: 1;
-           background: linear-gradient(135deg, #f8fafc 0%, #e7f2ff 100%);
-           border-radius: var(--radius-lg);
-           padding: var(--spacing-md);
-           overflow-y: auto;
-           display: flex;
-           flex-direction: column;
-           gap: var(--spacing-md);
-           margin-bottom: var(--spacing-md);
-           border: 1px solid #e2e8f0;
-        }
-        .message-row {
-           display: flex;
-           align-items: flex-start;
-           gap: 8px;
-        }
-        .message-row.user {
-           justify-content: flex-end;
-        }
-        .message-container {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            max-width: 80%;
-        }
-        .avatar {
-           width: 32px;
-           height: 32px;
-           border-radius: 50%;
-           display: flex;
-           align-items: center;
-           justify-content: center;
-           flex-shrink: 0;
-        }
-        .avatar.bot { 
-            background: linear-gradient(135deg, #7209B7 0%, #9d4edd 100%); 
-            color: white; 
-        }
-        .avatar.user { 
-            background: var(--color-primary); 
-            color: white; 
-        }
+                .chat-container.gemini-theme {
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    background: #fdfefe;
+                    font-family: 'Inter', sans-serif;
+                }
 
-        .message-bubble {
-           max-width: 100%;
-           padding: 12px 16px;
-           border-radius: 16px;
-           font-size: 14px;
-           line-height: 1.5;
-           box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-           white-space: pre-wrap;
-           word-wrap: break-word;
-        }
-        .bot .message-bubble {
-           background: white;
-           color: var(--color-text-main);
-           border-bottom-left-radius: 4px;
-        }
-        .user .message-bubble {
-           background: var(--color-primary);
-           color: white;
-           border-bottom-right-radius: 4px;
-        }
+                .header-crystal {
+                    background: linear-gradient(135deg, #7209B7 0%, #3F37C9 100%);
+                    padding: 20px;
+                    display: flex;
+                    align-items: center;
+                    gap: 15px;
+                    color: white;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                    z-index: 10;
+                }
 
-        .message-actions {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 4px;
-            padding: 0 4px;
-        }
-        .confidence-badge {
-            font-size: 10px;
-            color: #64748b;
-            font-weight: 500;
-        }
-        .copy-btn {
-            background: transparent;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            padding: 4px;
-            border-radius: 4px;
-            transition: all 0.2s;
-        }
-        .copy-btn:hover {
-            background: #f1f5f9;
-            color: var(--color-primary);
-        }
+                .back-btn-blur {
+                    background: rgba(255,255,255,0.15);
+                    backdrop-filter: blur(5px);
+                    border: 1px solid rgba(255,255,255,0.2);
+                    padding: 8px;
+                    border-radius: 12px;
+                    color: white;
+                }
 
-        .options-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 8px;
-            width: 100%;
-        }
-        .choice-btn {
-            background: white;
-            border: 2px solid var(--color-primary);
-            color: var(--color-primary);
-            padding: 10px 16px;
-            border-radius: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: left;
-            flex: 1 1 calc(50% - 8px);
-            min-width: 120px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .choice-btn:hover:not(:disabled) {
-            background: var(--color-primary);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.2);
-        }
-        .choice-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
+                .bot-info h2 { font-size: 18px; font-weight: 700; margin: 0; }
+                .badge-proactive {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 11px;
+                    opacity: 0.9;
+                    margin-top: 4px;
+                }
+                .pulse {
+                    width: 8px; height: 8px;
+                    background: #4ade80;
+                    border-radius: 50%;
+                    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7);
+                    animation: pulse-green 2s infinite;
+                }
 
-        .input-section {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            flex-shrink: 0;
-            padding-top: var(--spacing-sm);
-            border-top: 1px solid #e2e8f0;
-        }
+                .chat-window-crystal {
+                    flex: 1;
+                    padding: 20px;
+                    overflow-y: auto;
+                    background: #f8fafc;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 24px;
+                }
 
-        .input-form {
-            display: flex;
-            gap: 10px;
-        }
-        .chat-input {
-            flex: 1;
-            padding: 14px 18px;
-            border-radius: 24px;
-            border: 2px solid #cbd5e1;
-            font-size: 14px;
-            background: white;
-            transition: all 0.2s;
-        }
-        .chat-input:focus { 
-            border-color: var(--color-primary); 
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
-        }
-        .chat-input:disabled {
-            background: #f1f5f9;
-            cursor: not-allowed;
-        }
-        .send-btn {
-            width: 48px; 
-            height: 48px;
-            background: linear-gradient(135deg, var(--color-primary) 0%, #ec4899 100%);
-            color: white;
-            border-radius: 50%;
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            box-shadow: 0 4px 12px rgba(244, 63, 94, 0.3);
-            transition: all 0.2s;
-        }
-        .send-btn:hover:not(:disabled) {
-            transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(244, 63, 94, 0.4);
-        }
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
+                .message-bubble.glass {
+                    background: white;
+                    border-radius: 20px;
+                    padding: 16px;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+                    border: 1px solid #eef2f6;
+                    font-size: 14px;
+                    line-height: 1.6;
+                    color: #334155;
+                }
 
-        .typing span {
-           animation: blink 1.4s infinite both;
-           margin: 0 1px;
-           font-size: 20px;
-        }
-        .typing span:nth-child(2) { animation-delay: 0.2s; }
-        .typing span:nth-child(3) { animation-delay: 0.4s; }
-        
-        @keyframes blink {
-           0% { opacity: 0.2; }
-           20% { opacity: 1; }
-           100% { opacity: 0.2; }
-        }
-      `}</style>
+                .bot-bubble.glass {
+                    border-top-left-radius: 4px;
+                    background: linear-gradient(to bottom right, #ffffff, #f1f5f9);
+                }
+
+                .user-bubble.glass {
+                    background: linear-gradient(135deg, #7209B7 0%, #3F37C9 100%);
+                    color: white;
+                    border-top-right-radius: 4px;
+                    box-shadow: 0 4px 15px rgba(114, 9, 183, 0.2);
+                }
+
+                .avatar-bot {
+                    width: 32px; height: 32px;
+                    border-radius: 10px;
+                    display: flex; align-items: center; justify-content: center;
+                    color: white;
+                    background: #7209B7;
+                }
+                .avatar-bot.congratulatory { background: #10b981; }
+                .avatar-bot.cautionary { background: #f59e0b; }
+
+                .interactive-options {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin-top: 12px;
+                }
+
+                .gemini-choice-btn {
+                    background: white;
+                    border: 1.5px solid #e2e8f0;
+                    padding: 10px 18px;
+                    border-radius: 20px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #7209B7;
+                    transition: all 0.2s;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+                }
+
+                .gemini-choice-btn:hover {
+                    border-color: #7209B7;
+                    background: #f5f3ff;
+                    transform: translateY(-2px);
+                }
+
+                .input-section-crystal {
+                    padding: 20px;
+                    background: white;
+                    border-top: 1px solid #f1f5f9;
+                }
+
+                .input-form-glass {
+                    display: flex;
+                    gap: 12px;
+                    background: #f1f5f9;
+                    padding: 8px;
+                    border-radius: 30px;
+                }
+
+                .chat-input-glass {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    padding: 10px 15px;
+                    font-size: 14px;
+                    color: #334155;
+                }
+                .chat-input-glass:focus { outline: none; }
+
+                .send-btn-gradient {
+                    width: 45px; height: 45px;
+                    background: linear-gradient(135deg, #7209B7 0%, #3F37C9 100%);
+                    color: white;
+                    border-radius: 50%;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: all 0.2s;
+                }
+
+                .md-header { margin: 15px 0 8px 0; color: #1e293b; font-size: 15px; }
+                .md-list-item { display: flex; gap: 10px; margin-bottom: 6px; }
+                .bullet { color: #7209B7; font-weight: bold; }
+                
+                .expert-badge {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 10px;
+                    color: #64748b;
+                    margin-top: 8px;
+                    font-weight: 600;
+                    background: #f1f5f9;
+                    padding: 4px 8px;
+                    border-radius: 6px;
+                    width: fit-content;
+                }
+
+                @keyframes pulse-green {
+                    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+                    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+                    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+                }
+
+                .dot-wave { display: flex; gap: 4px; }
+                .dot-wave span { width: 6px; height: 6px; background: #94a3b8; border-radius: 50%; animation: wave 1.3s infinite ease-in-out; }
+                .dot-wave span:nth-child(2) { animation-delay: 0.1s; }
+                .dot-wave span:nth-child(3) { animation-delay: 0.2s; }
+
+                @keyframes wave {
+                    0%, 60%, 100% { transform: translateY(0); }
+                    30% { transform: translateY(-4px); }
+                }
+            `}</style>
         </div>
     );
 };

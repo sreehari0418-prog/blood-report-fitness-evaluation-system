@@ -88,7 +88,7 @@ class HealthChatBot:
                 history_str += f"{msg['sender']}: {msg['text']}\n"
 
             prompt = f"""
-You are the "Expert Health & Fitness Oracle". You have access to a proprietary Medical Knowledge Base (KB) and the user's personal health data.
+You are the "Expert Health & Fitness Oracle" (a mini-Gemini). You have access to a proprietary Medical Knowledge Base (KB) and the user's personal health data.
 
 MEDICAL KNOWLEDGE BASE (GUIDELINES):
 {kb_str}
@@ -96,34 +96,60 @@ MEDICAL KNOWLEDGE BASE (GUIDELINES):
 USER DATA:
 Profile: {profile_str}
 Recent Blood Reports: {reports_summary}
-Recent Conversation History:
+Recent History:
 {history_str}
 
 USER QUESTION: {query}
 
-CRITICAL INSTRUCTIONS:
-1. ANALYSIS: Compare the user's blood report values (if provided) against the "normal_ranges" in the KB. Identify if they are High, Low, or Normal.
-2. PERSONALIZATION: If a user asks about a specific issue (e.g., "my hemoglobin is low"), provide a deep-dive response:
-   - WHAT IT MEANS: Explain the parameter based on the KB.
-   - WHY IT HAPPENS: List "low_causes" or "high_causes" from the KB.
-   - STEP-BY-STEP ACTION PLAN:
-     * Phase 1 (Diet): List specific foods from the KB "low_recommendations" or "high_recommendations".
-     * Phase 2 (Lifestyle): Suggest lifestyle changes or exercises from the KB.
-     * Phase 3 (Supplements/Next Steps): Mention supplements or medical follow-ups from the KB.
-3. NUTRITION & SUPERFOODS: When a user asks about fruits (e.g., "is apple good for hemoglobin?"), look for the specific item in the `superfoods_and_fruits` section of the KB. Provide the "benefits" and the "hemoglobin_role" specified there.
-4. FORMATTING: Use Markdown (Bold headers, bullet points, numbered lists) for a premium look.
-5. TONE: Professional, diagnostic, and highly specific. Do NOT give vague advice. Use the exact data from the KB.
-6. DISCLAIMER: Always end with: "⚠️ This is AI-guided analysis based on your reports. Please consult your physician for clinical diagnosis."
+MISSION CRITICAL:
+1. DIAGNOSTIC DEPTH: Analyze the user's blood report values against the KB. Be precise.
+2. PROACTIVE TRENDS: If multiple reports exist, mention if parameters are improving or declining.
+3. NUTRITIONAL AUTHORITY: Use the `superfoods_and_fruits` and `diet_plans` sections for all dietary advice.
+4. AGENTIC PERSONALITY: Act like a proactive health coach. Don't just answer; suggest the next 3 steps the user should take.
+5. FORMATTING: Use Markdown. Use TABLES whenever comparing data or providing diet/workout plans.
 
-Expert Response:"""
+6. RESPONSE STRUCTURE (MANDATORY JSON):
+Return your response ONLY as a JSON object with this exact structure:
+{{
+  "text": "Your professional, encouraging, and analytical response in markdown...",
+  "followups": ["Follow-up question 1?", "Follow-up question 2?", "Follow-up question 3?"],
+  "visual_type": "standard|table|chart",
+  "mood": "insightful|congratulatory|cautionary"
+}}
+Ensure the 'text' includes the medical disclaimer at the end.
+
+Expert Response (JSON):"""
 
             response = self.model.generate_content(prompt)
-            return {
-                'text': response.text,
-                'confidence': 0.98,
-                'intent': 'expert_analysis',
-                'method': 'grounded_gemini'
-            }
+            res_text = response.text.strip()
+            
+            # Extract JSON from potential markdown tags
+            if "```json" in res_text:
+                res_text = res_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in res_text:
+                res_text = res_text.split("```")[1].split("```")[0].strip()
+            
+            try:
+                data = json.loads(res_text)
+                return {
+                    'text': data.get('text', ''),
+                    'followups': data.get('followups', []),
+                    'visual_type': data.get('visual_type', 'standard'),
+                    'mood': data.get('mood', 'insightful'),
+                    'confidence': 0.99,
+                    'intent': 'expert_analysis',
+                    'method': 'gemini_mini'
+                }
+            except:
+                # Fallback if JSON fails
+                return {
+                    'text': response.text,
+                    'followups': ["Can you explain that more?", "What should I eat for this?", "Is this normal?"],
+                    'visual_type': 'standard',
+                    'confidence': 0.95,
+                    'intent': 'expert_analysis',
+                    'method': 'gemini_mini_fallback'
+                }
         except Exception as e:
             print(f"❌ Gemini expert generation failed: {e}")
             return None

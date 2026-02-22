@@ -99,6 +99,15 @@ console.log(data.prediction); // "Healthy"
 5.  **Start Command:** `python unified_api.py` (Runs on Port 5001 to avoid AirPlay conflict)
 6.  Click **Deploy**. You get a URL: `https://blood-app-backend.onrender.com`
 
+> [!TIP]
+> **Why is my backend slow at first or "not working 24/7"?**
+> Render's Free Instance goes to "sleep" after 15 minutes of inactivity. When you open the app again, it takes **30–60 seconds** to wake up (spin-up).
+> **Solution for 24/7 Uptime:** 
+> 1. Use [cron-job.org](https://cron-job.org/) (Free).
+> 2. Create a job to ping your health URL: `https://your-backend.onrender.com/health`
+> 3. Set the frequency to **every 10 minutes**.
+> 4. This will keep the server awake 24/7! 🚀
+
 ### **Part B: Frontend (Firebase)**
 1.  Run `npm run build` locally (creates `dist` folder).
 2.  Run `firebase deploy`.
