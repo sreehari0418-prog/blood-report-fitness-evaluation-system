@@ -164,47 +164,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             const lowerRow = row.toLowerCase().trim();
             if (!lowerRow) return;
 
-            // ─── NEW: Tag-Based Parsing (Cloud Priority) ───
-            // If row contains [PARAM] and [VAL], we use explicit parsing (most accurate)
-            if (lowerRow.includes('[param]') && lowerRow.includes('[val]')) {
-                const paramPart = lowerRow.split('[val]')[0].replace('[param]', '').trim();
-                const valPart = lowerRow.split('[val]')[1].split('[unit]')[0].trim();
-                const metaPart = lowerRow.split('[meta]'); // Check for [META] age/gender
-
-                // Extract Numeric Value safely from [VAL] section
-                const valMatch = valPart.match(/(\d+\.?\d*)/);
-                if (valMatch) {
-                    const extractedVal = parseFloat(valMatch[0]);
-
-                    // Find which internal key this paramPart belongs to
-                    Object.keys(KEYWORD_MAP).forEach(paramKey => {
-                        const synonyms = KEYWORD_MAP[paramKey];
-                        if (synonyms.some(s => paramPart.includes(s.toLowerCase()) || isFuzzyMatch(paramPart, s))) {
-                            if (!extractedValues[paramKey]) {
-                                extractedValues[paramKey] = extractedVal;
-                                console.log(`🎯 Explicit Cloud Match: ${paramKey} = ${extractedVal} (from tags)`);
-                            }
-                        }
-                    });
-                }
-
-                // Metadata extraction from [META] tags
-                if (lowerRow.includes('[meta]')) {
-                    const metaSegments = lowerRow.split('[meta]');
-                    metaSegments.forEach(seg => {
-                        if (seg.includes('age')) {
-                            const m = seg.match(/(\d+)/);
-                            if (m) patientMeta.Age = parseInt(m[1]);
-                        }
-                        if (seg.includes('male') || seg.includes('sex: m')) patientMeta.Gender = 'M';
-                        if (seg.includes('female') || seg.includes('sex: f')) patientMeta.Gender = 'F';
-                    });
-                }
-                return; // Skip fuzzy logic for this row as it's already handled by tags
-            }
-
-
-            // ─── ORIGINAL: Fuzzy / Adaptive Parsing (Fallback) ───
+            // ─── ORIGINAL: Fuzzy / Adaptive Parsing ───
             // 3. Safety Filter: Ignore lines that still look like Patient Info
             // (Even if we missed the header, these keys are risky)
             const IGNORE_KEYS = ['patient', 'name:', 'age:', 'sex:', 'gender:', 'id:', 'referred by:', 'dr.', 'date:', 'time:'];
@@ -459,36 +419,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     const processPdf = async (file) => {
         setIsLoading(true);
 
-        // ── STRATEGY 1: Gemini Vision (Cloud — highest accuracy) ──────────────
-        try {
-            setStatusText('✨ Sending to Gemini AI for extraction...');
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/extract-pdf`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.text && result.text.length > 50) {
-                    console.log(`✅ Gemini Vision extracted ${result.text.length} chars from ${result.pages} page(s)`);
-                    setStatusText(`✅ Cloud extraction done (${result.pages} page${result.pages > 1 ? 's' : ''})! Analyzing...`);
-                    await new Promise(r => setTimeout(r, 800)); // Brief pause to show success
-                    processTextData(result.text);
-                    return; // Done — no fallback needed
-                } else if (result.error) {
-                    console.warn('⚠️ Gemini Vision returned an error:', result.error);
-                    // Show error briefly, then continue to fallback
-                    setStatusText(`⚠️ Cloud extraction failed: ${result.error}`);
-                    await new Promise(r => setTimeout(r, 1500));
-                }
-            }
-        } catch (err) {
-            // Backend offline or network error — silently fall back
-            console.warn('🔄 Gemini Vision unavailable, falling back to local extraction:', err.message);
-        }
+        setStatusText('🔄 Scanning PDF...');
 
         // ── STRATEGY 2: Local pdfjs + Tesseract.js (Fallback) ────────────────
         setStatusText('🔄 Using local extraction (fallback)...');
@@ -555,59 +486,51 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         setStatusText('Preprocessing Image...');
 
         try {
-            // ── STRATEGY 1: Gemini Vision (Cloud — highest accuracy) ──────────────
-            // Now supported for both PDF and Images in Expert mode!
-            if (analysisMode === 'expert') {
+            // OPTION 1: Try Backend Enhanced OCR (ML Correction + Table Detection)
+            // Checks: Must be in ML Mode AND not a PDF
+            if (analysisMode === 'ml') {
                 try {
-                    setStatusText('✨ Sending to Gemini AI for extraction...');
-                    const formData = new FormData();
-                    formData.append('file', file);
+                    setStatusText('Analyzing with Advanced AI...');
 
-                    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/extract-image`, {
+                    const formData = new FormData();
+                    formData.append('image', file);
+
+                    // Use configured backend URL (Local or Render)
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/ocr`, {
                         method: 'POST',
                         body: formData
                     });
 
                     if (response.ok) {
                         const result = await response.json();
-                        if (result.success && result.text && result.text.length > 50) {
-                            console.log(`✅ Gemini Vision extracted ${result.text.length} chars from image`);
-                            setStatusText(`✅ Cloud extraction done! Analyzing...`);
-                            await new Promise(r => setTimeout(r, 800));
-                            processTextData(result.text);
-                            return; // Success!
+                        if (result.success && result.detected_values && Object.keys(result.detected_values).length > 0) {
+                            console.log("✅ Using Backend OCR Results:", result);
+
+                            // Show corrections if any
+                            const correctionCount = result.corrections ? Object.keys(result.corrections).length : 0;
+                            if (correctionCount > 0) {
+                                setStatusText(`Corrected ${correctionCount} values with AI...`);
+                                await new Promise(r => setTimeout(r, 1000)); // Show message briefly
+                            }
+
+                            // Extract metadata (Age/Gender) from raw text if possible, using existing logic equivalent
+                            let patientMeta = { Age: 30, Gender: 'M' };
+                            const lowerText = result.raw_text.toLowerCase();
+
+                            // Simple client-side meta extraction from raw text
+                            const ageMatch = lowerText.match(/age\s*[:\-\.]?\s*(\d{1,3})/);
+                            if (ageMatch) patientMeta.Age = parseInt(ageMatch[1]);
+
+                            if (lowerText.includes('female') || lowerText.includes('sex: f')) patientMeta.Gender = 'F';
+
+                            // Call finishAnalysis directly with corrected values
+                            finishAnalysis(result.detected_values, patientMeta);
+                            return; // Done!
                         }
                     }
-                } catch (cloudErr) {
-                    console.warn("🔄 Gemini Cloud unavailable for image, falling back:", cloudErr);
+                } catch (backendErr) {
+                    console.warn("Backend OCR unavailable, falling back to local Tesseract:", backendErr);
                 }
-            }
-
-            // OPTION 2: Try Backend Cloud OCR (Gemini Vision — highest accuracy)
-            // Supported for both Expert and ML modes!
-            try {
-                setStatusText('✨ Calling Cloud AI for extraction...');
-                const formData = new FormData();
-                formData.append('image', file);
-
-                // Use unified /ocr endpoint (now Gemini-backed)
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/ocr`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success && result.text) {
-                        console.log(`✅ Cloud AI extracted ${result.text.length} chars`);
-                        setStatusText(`✅ Cloud extraction done! Finalizing...`);
-                        await new Promise(r => setTimeout(r, 800));
-                        processTextData(result.text);
-                        return; // Success!
-                    }
-                }
-            } catch (cloudErr) {
-                console.warn("🔄 Cloud OCR unavailable, falling back to local:", cloudErr);
             }
 
             // OPTION 2: Fallback to Local Tesseract.js (Original Method)

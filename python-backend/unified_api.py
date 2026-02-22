@@ -1,13 +1,4 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from flask_sqlalchemy import SQLAlchemy
-import bcrypt
-import jwt
 import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 import werkzeug
 from datetime import datetime, timedelta
 
@@ -271,7 +262,6 @@ except Exception as e:
 # ML ENDPOINTS
 # ============================================================================
 
-@app.route('/predict', methods=['POST'])
 @app.route('/api/predict-disease', methods=['POST'])
 def predict_disease():
     if not ML_ARTIFACTS:
@@ -325,122 +315,34 @@ def predict_disease():
         print(f"❌ Prediction Error: {e}")
         return jsonify({"error": str(e)}), 400
 
-@app.route('/ocr', methods=['POST'])
 @app.route('/analyze', methods=['POST'])
 def analyze_report():
-    """
-    Unified OCR endpoint that uses Gemini Vision for 100% accuracy.
-    This replaces the old Tesseract-based /analyze endpoint.
-    """
-    if 'file' not in request.files and 'image' not in request.files:
+    from extract import extract_data
+    if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
     
-    file = request.files.get('file') or request.files.get('image')
+    file = request.files['file']
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
 
-    try:
-        from gemini_extraction_service import extract_text_from_image_bytes, _configure_gemini
-        img_bytes = file.read()
-        print(f"✨ Received OCR Request ({len(img_bytes)} bytes) → Sending to Gemini Vision...")
-
-        model = _configure_gemini()
-        text = extract_text_from_image_bytes(img_bytes, model)
-
-        if text:
-            print(f"✅ Gemini extracted {len(text)} chars for ML/Expert mode")
-            # We need to parse the text into values here if the frontend expects 'detected_values'
-            # OR we just return raw text and let the frontend parse it as it already does
+    if file:
+        filename = werkzeug.utils.secure_filename(file.filename)
+        filepath = os.path.join(UPLOAD_DIR, filename)
+        file.save(filepath)
+        
+        try:
+            print(f"🧠 Processing {filename} with OCR and Extraction...")
+            results = extract_data(filepath)
+            
             return jsonify({
-                "success": True,
                 "message": "Analysis Complete",
-                "text": text,
-                "raw_text": text, # Backward compatibility
-                "method": "gemini_vision"
+                "raw_results": results, 
+                "ml_enabled": True
             })
-        else:
-            return jsonify({"error": "Gemini returned empty text"}), 500
 
-    except Exception as e:
-        print(f"❌ Gemini OCR Error: {e}")
-        return jsonify({"error": str(e)}), 500
-
-# ============================================================================
-# GEMINI VISION EXTRACTION ENDPOINTS (PDF & IMAGES)
-# ============================================================================
-
-@app.route('/api/extract-pdf', methods=['POST'])
-def extract_pdf_gemini():
-    """
-    Cloud-based PDF text extraction using Gemini Vision.
-    Accepts: multipart/form-data with 'file' (PDF)
-    Returns: JSON { success, text, pages, method }
-    """
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': 'No file provided'}), 400
-
-    file = request.files['file']
-    if not file.filename:
-        return jsonify({'success': False, 'error': 'Empty filename'}), 400
-
-    if not file.filename.lower().endswith('.pdf'):
-        return jsonify({'success': False, 'error': 'Only PDF files are supported'}), 400
-
-    try:
-        from gemini_extraction_service import extract_text_from_pdf_bytes
-        pdf_bytes = file.read()
-        print(f"✨ Received PDF ({len(pdf_bytes)} bytes) → Sending to Gemini Vision...")
-
-        result = extract_text_from_pdf_bytes(pdf_bytes)
-
-        if result['success']:
-            print(f"✅ Gemini extracted {len(result['text'])} chars from {result['pages']} page(s)")
-            return jsonify(result), 200
-        else:
-            print(f"❌ Gemini failed: {result['error']}")
-            return jsonify(result), 500
-
-    except Exception as e:
-        print(f"❌ /api/extract-pdf error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-
-@app.route('/api/extract-image', methods=['POST'])
-def extract_image_gemini():
-    """
-    Cloud-based Image text extraction using Gemini Vision.
-    Accepts: multipart/form-data with 'file' (Image)
-    Returns: JSON { success, text, method }
-    """
-    if 'file' not in request.files:
-        return jsonify({'success': False, 'error': 'No file provided'}), 400
-
-    file = request.files['file']
-    if not file:
-        return jsonify({'success': False, 'error': 'No file provided'}), 400
-
-    try:
-        from gemini_extraction_service import extract_text_from_image_bytes, _configure_gemini
-        img_bytes = file.read()
-        print(f"✨ Received Image ({len(img_bytes)} bytes) → Sending to Gemini Vision...")
-
-        model = _configure_gemini()
-        text = extract_text_from_image_bytes(img_bytes, model)
-
-        if text:
-            print(f"✅ Gemini extracted {len(text)} chars from image")
-            return jsonify({
-                'success': True,
-                'text': text,
-                'method': 'gemini_vision'
-            }), 200
-        else:
-            print(f"❌ Gemini returned empty text from image")
-            return jsonify({'success': False, 'error': 'No text detected in image'}), 500
-
-    except Exception as e:
-        print(f"❌ /api/extract-image error: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        except Exception as e:
+            print(f"❌ Error during extraction: {e}")
+            return jsonify({"error": str(e)}), 500
 
 
 # ============================================================================

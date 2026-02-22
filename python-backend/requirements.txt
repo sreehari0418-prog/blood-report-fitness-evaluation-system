@@ -12,9 +12,12 @@ joblib==1.3.2
 pillow==10.1.0
 pytesseract==0.3.10
 werkzeug==3.0.1
-python-dotenv==1.0.0
 
-# Gemini Vision Integration (Free cloud-based PDF extraction — no card needed)
-google-generativeai==0.7.2
-PyMuPDF==1.23.8
+# Original OCR / ML Dependencies
+numpy==1.26.2
+pandas==2.1.3
+scikit-learn==1.3.2
+joblib==1.3.2
+pillow==10.1.0
+pytesseract==0.3.10
 
