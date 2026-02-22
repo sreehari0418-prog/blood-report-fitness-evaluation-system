@@ -349,7 +349,102 @@ def analyze_report():
             print(f"❌ Error during extraction: {e}")
             return jsonify({"error": str(e)}), 500
 
+# ============================================================================
+# AWS TEXTRACT PDF EXTRACTION ENDPOINT
+# ============================================================================
+
+@app.route('/api/extract-pdf', methods=['POST'])
+def extract_pdf_textract():
+    """
+    Cloud-based PDF text extraction using AWS Textract.
+    Accepts: multipart/form-data with 'file' (PDF)
+    Returns: JSON { success, text, pages, method }
+    """
+    if 'file' not in request.files:
+        return jsonify({'success': False, 'error': 'No file provided'}), 400
+
+    file = request.files['file']
+    if not file.filename:
+        return jsonify({'success': False, 'error': 'Empty filename'}), 400
+
+    if not file.filename.lower().endswith('.pdf'):
+        return jsonify({'success': False, 'error': 'Only PDF files are supported'}), 400
+
+    try:
+        from gemini_extraction_service import extract_text_from_pdf_bytes
+        pdf_bytes = file.read()
+        print(f"✨ Received PDF ({len(pdf_bytes)} bytes) → Sending to Gemini Vision...")
+
+        result = extract_text_from_pdf_bytes(pdf_bytes)
+
+        if result['success']:
+            print(f"✅ Textract extracted {len(result['text'])} chars from {result['pages']} page(s)")
+            return jsonify(result), 200
+        else:
+            print(f"❌ Textract failed: {result['error']}")
+            return jsonify(result), 500
+
+    except ImportError:
+        return jsonify({
+            'success': False,
+            'error': 'AWS Textract service not available. Run: pip install boto3 PyMuPDF'
+        }), 503
+    except Exception as e:
+        print(f"❌ /api/extract-pdf error: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================================
+# INTELLIGENT CHAT ENDPOINT
+# ============================================================================
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    """
+    Intelligent health chatbot endpoint
+    Accepts user query with context and returns personalized response
+    """
+    try:
+        from chat_service import get_chatbot
+        
+        data = request.json
+        query = data.get('query', '')
+        user_profile = data.get('userProfile', {})
+        blood_reports = data.get('bloodReports', [])
+        conversation_history = data.get('conversationHistory', [])
+        
+        if not query:
+            return jsonify({'error': 'Query is required'}), 400
+        
+        print(f"💬 Chat Query: {query}")
+        
+        # Get chatbot instance and generate response
+        chatbot = get_chatbot()
+        response = chatbot.get_response(
+            query=query,
+            user_profile=user_profile,
+            blood_reports=blood_reports,
+            conversation_history=conversation_history
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'response': response['text'],
+            'confidence': response.get('confidence', 0.8),
+            'intent': response.get('intent', 'general'),
+            'metadata': {k: v for k, v in response.items() if k not in ['text', 'confidence', 'intent']}
+        }), 200
+        
+    except Exception as e:
+        print(f"❌ Chat Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'error': 'Chat service error',
+            'message': str(e)
+        }), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5001))
-    print(f"🚀 Blood & Fit Unified API (SQLAlchemy + ML) running on port {port}")
+    print(f"🚀 Blood & Fit Unified API (SQLAlchemy + ML + Chat) running on port {port}")
     app.run(host='0.0.0.0', port=port, debug=True)

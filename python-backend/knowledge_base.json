@@ -1,0 +1,699 @@
+{
+    "blood_parameters": {
+        "hemoglobin": {
+            "name": "Hemoglobin",
+            "unit": "g/dL",
+            "normal_ranges": {
+                "male": {
+                    "min": 13.5,
+                    "max": 17.5
+                },
+                "female": {
+                    "min": 12.0,
+                    "max": 15.5
+                }
+            },
+            "low_causes": [
+                "Iron deficiency",
+                "Anemia",
+                "Blood loss",
+                "Chronic disease",
+                "Malnutrition"
+            ],
+            "high_causes": [
+                "Dehydration",
+                "Smoking",
+                "Living at high altitude",
+                "Polycythemia"
+            ],
+            "low_recommendations": {
+                "diet": [
+                    "Spinach",
+                    "Red meat",
+                    "Lentils",
+                    "Dates",
+                    "Pomegranate",
+                    "Beetroot",
+                    "Iron-fortified cereals"
+                ],
+                "supplements": "Consider iron supplements with Vitamin C for better absorption",
+                "lifestyle": "Avoid tea/coffee with meals as they reduce iron absorption"
+            },
+            "high_recommendations": {
+                "diet": "Stay well hydrated, reduce red meat intake",
+                "lifestyle": "Quit smoking if applicable, consult doctor for polycythemia screening"
+            }
+        },
+        "glucose": {
+            "name": "Blood Glucose (Fasting)",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "general": {
+                    "min": 70,
+                    "max": 100
+                }
+            },
+            "prediabetic": {
+                "min": 100,
+                "max": 125
+            },
+            "diabetic": {
+                "min": 126,
+                "max": 999
+            },
+            "low_causes": [
+                "Excessive insulin",
+                "Skipping meals",
+                "Intense exercise",
+                "Certain medications"
+            ],
+            "high_causes": [
+                "Type 2 Diabetes",
+                "Prediabetes",
+                "Insulin resistance",
+                "High carb diet",
+                "Stress"
+            ],
+            "low_recommendations": {
+                "diet": [
+                    "Quick carbs: Orange juice",
+                    "Glucose tablets",
+                    "Honey"
+                ],
+                "lifestyle": "Eat regular small meals, don't skip breakfast"
+            },
+            "high_recommendations": {
+                "diet": [
+                    "Low GI foods: Oats, quinoa, vegetables",
+                    "Avoid: White rice, sugary drinks, pastries",
+                    "Increase fiber intake"
+                ],
+                "exercise": "30 minutes daily walking, Zone 2 cardio",
+                "lifestyle": "Monitor blood sugar regularly, maintain healthy weight"
+            }
+        },
+        "cholesterol_total": {
+            "name": "Total Cholesterol",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "general": {
+                    "min": 0,
+                    "max": 200
+                }
+            },
+            "borderline": {
+                "min": 200,
+                "max": 239
+            },
+            "high": {
+                "min": 240,
+                "max": 999
+            },
+            "high_causes": [
+                "High saturated fat diet",
+                "Lack of exercise",
+                "Obesity",
+                "Genetics"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Oats",
+                    "Nuts (almonds, walnuts)",
+                    "Fatty fish",
+                    "Olive oil",
+                    "Avoid trans fats and fried foods"
+                ],
+                "exercise": "150 mins/week aerobic exercise",
+                "lifestyle": "Maintain healthy weight, quit smoking"
+            }
+        },
+        "hdl": {
+            "name": "HDL (Good Cholesterol)",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "male": {
+                    "min": 40,
+                    "max": 999
+                },
+                "female": {
+                    "min": 50,
+                    "max": 999
+                }
+            },
+            "low_causes": [
+                "Sedentary lifestyle",
+                "Smoking",
+                "High carb diet",
+                "Obesity"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Olive oil",
+                    "Fatty fish (salmon, mackerel)",
+                    "Nuts",
+                    "Avocado"
+                ],
+                "exercise": "Aerobic exercise increases HDL",
+                "lifestyle": "Quit smoking, lose excess weight"
+            }
+        },
+        "ldl": {
+            "name": "LDL (Bad Cholesterol)",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "general": {
+                    "min": 0,
+                    "max": 100
+                }
+            },
+            "high_causes": [
+                "Saturated fats",
+                "Trans fats",
+                "Genetics",
+                "Sedentary lifestyle"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Avoid: Butter, red meat, processed foods",
+                    "Eat: Vegetables, whole grains, lean proteins"
+                ],
+                "exercise": "Regular cardio reduces LDL",
+                "lifestyle": "Maintain healthy BMI"
+            }
+        },
+        "triglycerides": {
+            "name": "Triglycerides",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "general": {
+                    "min": 0,
+                    "max": 150
+                }
+            },
+            "high_causes": [
+                "Excess calories",
+                "Alcohol",
+                "High sugar diet",
+                "Diabetes"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Reduce sugar and refined carbs",
+                    "Omega-3 rich foods",
+                    "Avoid alcohol"
+                ],
+                "exercise": "Regular physical activity",
+                "lifestyle": "Lose weight if overweight"
+            }
+        },
+        "wbc": {
+            "name": "White Blood Cell Count",
+            "unit": "cells/μL",
+            "normal_ranges": {
+                "general": {
+                    "min": 4000,
+                    "max": 11000
+                }
+            },
+            "low_causes": [
+                "Viral infection",
+                "Autoimmune disorder",
+                "Bone marrow problems"
+            ],
+            "high_causes": [
+                "Bacterial infection",
+                "Inflammation",
+                "Leukemia",
+                "Stress",
+                "Smoking"
+            ],
+            "recommendations": {
+                "lifestyle": "Consult doctor if persistently abnormal, avoid infections, adequate rest"
+            }
+        },
+        "rbc": {
+            "name": "Red Blood Cell Count",
+            "unit": "million cells/μL",
+            "normal_ranges": {
+                "male": {
+                    "min": 4.5,
+                    "max": 5.9
+                },
+                "female": {
+                    "min": 4.0,
+                    "max": 5.2
+                }
+            },
+            "low_causes": [
+                "Anemia",
+                "Blood loss",
+                "Nutritional deficiencies"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Iron-rich foods",
+                    "Vitamin B12",
+                    "Folic acid"
+                ],
+                "lifestyle": "Address underlying causes with doctor"
+            }
+        },
+        "platelet": {
+            "name": "Platelet Count",
+            "unit": "cells/μL",
+            "normal_ranges": {
+                "general": {
+                    "min": 150000,
+                    "max": 450000
+                }
+            },
+            "low_causes": [
+                "Viral infections",
+                "Immune disorders",
+                "Certain medications",
+                "Leukemia"
+            ],
+            "high_causes": [
+                "Iron deficiency",
+                "Inflammation",
+                "Bone marrow disorders"
+            ],
+            "recommendations": {
+                "lifestyle": "Consult hematologist if significantly abnormal"
+            }
+        },
+        "tsh": {
+            "name": "Thyroid Stimulating Hormone",
+            "unit": "mIU/L",
+            "normal_ranges": {
+                "general": {
+                    "min": 0.4,
+                    "max": 4.0
+                }
+            },
+            "low_causes": [
+                "Hyperthyroidism",
+                "Graves disease"
+            ],
+            "high_causes": [
+                "Hypothyroidism",
+                "Hashimoto's thyroiditis",
+                "Iodine deficiency"
+            ],
+            "low_recommendations": {
+                "diet": "Avoid excess iodine, limit caffeine",
+                "lifestyle": "Manage stress, regular checkups"
+            },
+            "high_recommendations": {
+                "diet": [
+                    "Iodine-rich: Seafood, dairy",
+                    "Selenium: Brazil nuts",
+                    "Avoid goitrogens in excess (raw cruciferous vegetables)"
+                ],
+                "lifestyle": "May need thyroid medication, consult endocrinologist"
+            }
+        },
+        "vitamin_d": {
+            "name": "Vitamin D",
+            "unit": "ng/mL",
+            "normal_ranges": {
+                "general": {
+                    "min": 30,
+                    "max": 100
+                }
+            },
+            "low_causes": [
+                "Lack of sun exposure",
+                "Dark skin",
+                "Malabsorption"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Fatty fish",
+                    "Egg yolks",
+                    "Fortified milk",
+                    "Mushrooms"
+                ],
+                "supplements": "Vitamin D3 supplements (1000-2000 IU daily)",
+                "lifestyle": "15-20 mins sun exposure daily"
+            }
+        },
+        "vitamin_b12": {
+            "name": "Vitamin B12",
+            "unit": "pg/mL",
+            "normal_ranges": {
+                "general": {
+                    "min": 200,
+                    "max": 900
+                }
+            },
+            "low_causes": [
+                "Vegetarian/vegan diet",
+                "Malabsorption",
+                "Pernicious anemia"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Meat",
+                    "Fish",
+                    "Eggs",
+                    "Dairy",
+                    "Fortified cereals"
+                ],
+                "supplements": "B12 supplements for vegetarians",
+                "lifestyle": "Regular monitoring for vegans"
+            }
+        },
+        "creatinine": {
+            "name": "Creatinine",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "male": {
+                    "min": 0.7,
+                    "max": 1.3
+                },
+                "female": {
+                    "min": 0.6,
+                    "max": 1.1
+                }
+            },
+            "high_causes": [
+                "Kidney disease",
+                "Dehydration",
+                "High protein diet",
+                "Muscle injury"
+            ],
+            "recommendations": {
+                "diet": "Reduce protein if high, stay hydrated",
+                "lifestyle": "Monitor kidney function, consult nephrologist if persistently high"
+            }
+        },
+        "uric_acid": {
+            "name": "Uric Acid",
+            "unit": "mg/dL",
+            "normal_ranges": {
+                "male": {
+                    "min": 3.4,
+                    "max": 7.0
+                },
+                "female": {
+                    "min": 2.4,
+                    "max": 6.0
+                }
+            },
+            "high_causes": [
+                "Purine-rich diet",
+                "Alcohol",
+                "Kidney disease",
+                "Gout"
+            ],
+            "recommendations": {
+                "diet": [
+                    "Avoid: Red meat, organ meats, alcohol, sugary drinks",
+                    "Eat: Cherries, low-fat dairy, vegetables"
+                ],
+                "lifestyle": "Stay hydrated, maintain healthy weight, limit alcohol"
+            }
+        }
+    },
+    "diseases": {
+        "diabetes": {
+            "name": "Diabetes / High Blood Sugar",
+            "dietary_guidelines": {
+                "eat": [
+                    "Low GI foods: Steel-cut oats, quinoa, barley",
+                    "Non-starchy vegetables: Broccoli, spinach, cauliflower",
+                    "Lean proteins: Chicken, fish, tofu",
+                    "Healthy fats: Nuts, seeds, avocado",
+                    "Low GI fruits: Berries, apples, pears"
+                ],
+                "avoid": [
+                    "White rice, white bread, pastries",
+                    "Sugary drinks and sodas",
+                    "High GI fruits: Mango, pineapple, watermelon",
+                    "Fried foods",
+                    "Processed foods with added sugars"
+                ],
+                "meal_timing": "Eat small frequent meals every 3-4 hours"
+            },
+            "exercise_guidelines": {
+                "recommended": [
+                    "30 mins daily walking after meals",
+                    "Strength training 2-3x/week",
+                    "Swimming, cycling"
+                ],
+                "avoid": "Intense fasting cardio (risk of hypoglycemia)"
+            },
+            "monitoring": "Check blood sugar regularly, HbA1c every 3 months"
+        },
+        "hypertension": {
+            "name": "High Blood Pressure",
+            "dietary_guidelines": {
+                "eat": [
+                    "DASH diet: Fruits, vegetables, whole grains",
+                    "Potassium-rich: Bananas, potatoes, spinach",
+                    "Low-fat dairy",
+                    "Nuts and seeds"
+                ],
+                "avoid": [
+                    "Excess salt (limit to 1500mg/day)",
+                    "Pickles, papad, processed foods",
+                    "Alcohol",
+                    "Caffeine in excess"
+                ],
+                "meal_plan": "Focus on fresh, home-cooked meals"
+            },
+            "exercise_guidelines": {
+                "recommended": [
+                    "Moderate aerobic exercise 150 mins/week",
+                    "Walking, swimming, cycling"
+                ],
+                "avoid": "Heavy weightlifting (can spike BP)"
+            },
+            "lifestyle": "Reduce stress, adequate sleep, maintain healthy weight"
+        },
+        "anemia": {
+            "name": "Anemia / Low Hemoglobin",
+            "dietary_guidelines": {
+                "eat": [
+                    "Iron-rich: Red meat, liver, chicken",
+                    "Plant-based iron: Spinach, lentils, beans",
+                    "Vitamin C foods: Citrus fruits, tomatoes (enhances iron absorption)",
+                    "Folic acid: Leafy greens, fortified cereals",
+                    "Vitamin B12: Eggs, dairy, fish"
+                ],
+                "avoid": [
+                    "Tea and coffee with meals (reduces iron absorption)",
+                    "Calcium supplements with iron-rich meals"
+                ],
+                "cooking_tips": "Use iron cookware, soak beans overnight"
+            },
+            "supplements": "Iron supplements (325mg ferrous sulfate) with Vitamin C",
+            "monitoring": "Recheck hemoglobin after 3 months"
+        },
+        "hypothyroidism": {
+            "name": "Underactive Thyroid",
+            "dietary_guidelines": {
+                "eat": [
+                    "Iodine-rich: Sea fish, dairy, iodized salt",
+                    "Selenium: Brazil nuts (2-3 daily)",
+                    "Zinc: Pumpkin seeds, chickpeas"
+                ],
+                "limit": [
+                    "Raw cruciferous vegetables in excess (goitrogens)",
+                    "Soy products in excess"
+                ],
+                "timing": "Take thyroid medication on empty stomach, 30 mins before food"
+            },
+            "exercise_guidelines": {
+                "recommended": [
+                    "Low-impact exercise: Walking, yoga, swimming",
+                    "Strength training to boost metabolism"
+                ],
+                "note": "May feel fatigued initially, start slow"
+            }
+        },
+        "kidney_disease": {
+            "name": "Chronic Kidney Disease",
+            "dietary_guidelines": {
+                "limit": [
+                    "Protein: Follow doctor's advice (usually 0.8g/kg)",
+                    "Sodium: Max 2000mg/day",
+                    "Potassium: Limit bananas, oranges, potatoes",
+                    "Phosphorus: Limit dairy, nuts, processed foods"
+                ],
+                "eat": [
+                    "Low-potassium fruits: Apples, berries",
+                    "Controlled portions"
+                ],
+                "hydration": "Fluid restriction may be needed in advanced stages"
+            },
+            "monitoring": "Regular creatinine and eGFR checks"
+        }
+    },
+    "nutrition_database": {
+        "chicken_breast": {
+            "protein": 31,
+            "carbs": 0,
+            "fat": 3.6,
+            "calories": 165,
+            "serving": "100g"
+        },
+        "eggs": {
+            "protein": 13,
+            "carbs": 1.1,
+            "fat": 11,
+            "calories": 155,
+            "serving": "2 large eggs"
+        },
+        "paneer": {
+            "protein": 18,
+            "carbs": 1.2,
+            "fat": 20,
+            "calories": 265,
+            "serving": "100g"
+        },
+        "lentils_cooked": {
+            "protein": 9,
+            "carbs": 20,
+            "fat": 0.4,
+            "calories": 116,
+            "serving": "100g",
+            "iron": "3.3mg"
+        },
+        "spinach": {
+            "protein": 2.9,
+            "carbs": 3.6,
+            "fat": 0.4,
+            "calories": 23,
+            "serving": "100g",
+            "iron": "2.7mg"
+        },
+        "almonds": {
+            "protein": 21,
+            "carbs": 22,
+            "fat": 49,
+            "calories": 579,
+            "serving": "100g"
+        },
+        "oats": {
+            "protein": 17,
+            "carbs": 66,
+            "fat": 7,
+            "calories": 389,
+            "serving": "100g",
+            "fiber": "10.6g"
+        },
+        "salmon": {
+            "protein": 25,
+            "carbs": 0,
+            "fat": 13,
+            "calories": 208,
+            "serving": "100g",
+            "omega3": "2.3g"
+        },
+        "banana": {
+            "protein": 1.1,
+            "carbs": 23,
+            "fat": 0.3,
+            "calories": 89,
+            "serving": "100g",
+            "potassium": "358mg"
+        },
+        "sweet_potato": {
+            "protein": 1.6,
+            "carbs": 20,
+            "fat": 0.1,
+            "calories": 86,
+            "serving": "100g",
+            "fiber": "3g"
+        },
+        "brown_rice": {
+            "protein": 2.6,
+            "carbs": 23,
+            "fat": 0.9,
+            "calories": 111,
+            "serving": "100g cooked"
+        },
+        "greek_yogurt": {
+            "protein": 10,
+            "carbs": 3.6,
+            "fat": 0.4,
+            "calories": 59,
+            "serving": "100g"
+        },
+        "broccoli": {
+            "protein": 2.8,
+            "carbs": 7,
+            "fat": 0.4,
+            "calories": 34,
+            "serving": "100g",
+            "vitamin_c": "89mg"
+        },
+        "dates": {
+            "protein": 1.8,
+            "carbs": 75,
+            "fat": 0.2,
+            "calories": 277,
+            "serving": "100g",
+            "iron": "0.9mg"
+        },
+        "peanut_butter": {
+            "protein": 25,
+            "carbs": 20,
+            "fat": 50,
+            "calories": 588,
+            "serving": "100g"
+        }
+    },
+    "fitness_guidelines": {
+        "muscle_building": {
+            "diet": {
+                "protein": "1.6-2.2g per kg body weight",
+                "carbs": "4-6g per kg (for energy)",
+                "calories": "Calorie surplus of 300-500 kcal/day",
+                "timing": "Protein within 2 hours post-workout"
+            },
+            "workout": {
+                "type": "Progressive resistance training",
+                "frequency": "4-6 days/week, split routine",
+                "rest": "48 hours between same muscle groups"
+            }
+        },
+        "weight_loss": {
+            "diet": {
+                "calories": "Deficit of 500 kcal/day for 0.5kg/week loss",
+                "protein": "1.2-1.6g per kg (preserve muscle)",
+                "fiber": "25-30g daily (satiety)",
+                "hydration": "3-4 liters water daily"
+            },
+            "workout": {
+                "type": "Mix of cardio (60%) and strength (40%)",
+                "frequency": "5-6 days/week",
+                "cardio": "Zone 2 cardio, 150-300 mins/week"
+            }
+        },
+        "general_fitness": {
+            "diet": {
+                "protein": "1.2g per kg body weight",
+                "balanced_macro": "40% carbs, 30% protein, 30% fats"
+            },
+            "workout": {
+                "cardio": "150 mins moderate or 75 mins vigorous/week",
+                "strength": "2-3 days/week, full body",
+                "flexibility": "Yoga or stretching 2x/week"
+            }
+        }
+    },
+    "conversational_templates": {
+        "greetings": [
+            "Hello! I'm your Health Assistant. How can I help you today?",
+            "Hi there! Ready to discuss your health and fitness?",
+            "Welcome! Ask me anything about your blood reports, diet, or workouts."
+        ],
+        "report_summary_intro": "Based on your latest blood report from {date}, here's what I found:",
+        "no_reports": "I don't see any blood reports uploaded yet. You can upload one in the Blood Evaluation section to get personalized insights!",
+        "normal_report": "Great news! Your latest blood report shows all parameters within normal range. Keep up the good work! 🌟",
+        "disclaimer": "⚠️ This is AI-generated advice based on general guidelines. Always consult your doctor for medical decisions."
+    }
+}

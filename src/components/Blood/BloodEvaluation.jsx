@@ -418,11 +418,43 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         setStatusText('');
     };
 
-    // --- PDF HANDLING (Hybrid: Direct Text -> OCR Fallback) ---
+    // --- PDF HANDLING (Gemini Vision Cloud → pdfjs/Tesseract Fallback) ---
     const processPdf = async (file) => {
         setIsLoading(true);
-        setStatusText('Reading PDF...');
 
+        // ── STRATEGY 1: Gemini Vision (Cloud — highest accuracy) ──────────────
+        try {
+            setStatusText('✨ Sending to Gemini AI for extraction...');
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/extract-pdf`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.text && result.text.length > 50) {
+                    console.log(`✅ Gemini Vision extracted ${result.text.length} chars from ${result.pages} page(s)`);
+                    setStatusText(`✅ Cloud extraction done (${result.pages} page${result.pages > 1 ? 's' : ''})! Analyzing...`);
+                    await new Promise(r => setTimeout(r, 800)); // Brief pause to show success
+                    processTextData(result.text);
+                    return; // Done — no fallback needed
+                } else if (result.error) {
+                    console.warn('⚠️ Gemini Vision returned an error:', result.error);
+                    // Show error briefly, then continue to fallback
+                    setStatusText(`⚠️ Cloud extraction failed: ${result.error}`);
+                    await new Promise(r => setTimeout(r, 1500));
+                }
+            }
+        } catch (err) {
+            // Backend offline or network error — silently fall back
+            console.warn('🔄 Gemini Vision unavailable, falling back to local extraction:', err.message);
+        }
+
+        // ── STRATEGY 2: Local pdfjs + Tesseract.js (Fallback) ────────────────
+        setStatusText('🔄 Using local extraction (fallback)...');
         try {
             const arrayBuffer = await file.arrayBuffer();
             const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
@@ -434,7 +466,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 setStatusText(`Scanning Page ${i} of ${pdf.numPages}...`);
                 const page = await pdf.getPage(i);
 
-                // STRATEGY 1: Direct Text (High Accuracy)
+                // STRATEGY 2a: Direct Text (High Accuracy for digital PDFs)
                 const textContent = await page.getTextContent();
                 const pageText = textContent.items.map(item => item.str).join('\n');
 
@@ -442,8 +474,8 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                     console.log(`Page ${i}: Digital text found.`);
                     fullText += pageText + "\n";
                 } else {
-                    // STRATEGY 2: OCR Fallback (Image Scan)
-                    console.log(`Page ${i}: Scanned image detected. Using OCR.`);
+                    // STRATEGY 2b: OCR Fallback (Image/Scanned PDF)
+                    console.log(`Page ${i}: Scanned image detected. Using Tesseract.js OCR.`);
 
                     const viewport = page.getViewport({ scale: 2.5 });
                     const canvas = document.createElement('canvas');
@@ -453,7 +485,6 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
 
                     await page.render({ canvasContext: context, viewport: viewport }).promise;
 
-                    // Convert to Blob and Scan with Tesseract immediately
                     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
                     if (blob) {
                         const { data: { text } } = await Tesseract.recognize(
@@ -476,8 +507,10 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
         } catch (err) {
             console.error(err);
             alert("Error processing PDF: " + err.message);
+            setIsLoading(false);
         }
     };
+
 
     // --- OCR LOGIC ---
     const processImage = async (file, isPdfDerived = false) => {
