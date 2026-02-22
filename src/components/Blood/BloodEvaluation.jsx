@@ -583,51 +583,31 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 }
             }
 
-            // OPTION 2: Try Backend Enhanced OCR (ML Correction + Table Detection)
-            // Checks: Must be in ML Mode AND not a PDF
-            if (analysisMode === 'ml') {
-                try {
-                    setStatusText('Analyzing with Advanced AI...');
+            // OPTION 2: Try Backend Cloud OCR (Gemini Vision — highest accuracy)
+            // Supported for both Expert and ML modes!
+            try {
+                setStatusText('✨ Calling Cloud AI for extraction...');
+                const formData = new FormData();
+                formData.append('image', file);
 
-                    const formData = new FormData();
-                    formData.append('image', file);
+                // Use unified /ocr endpoint (now Gemini-backed)
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/ocr`, {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    // Use configured backend URL (Local or Render)
-                    const response = await fetch(`${import.meta.env.VITE_API_URL}/ocr`, {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (result.success && Object.keys(result.detected_values).length > 0) {
-                            console.log("✅ Using Backend OCR Results:", result);
-
-                            // Show corrections if any
-                            const correctionCount = result.corrections ? Object.keys(result.corrections).length : 0;
-                            if (correctionCount > 0) {
-                                setStatusText(`Corrected ${correctionCount} values with AI...`);
-                                await new Promise(r => setTimeout(r, 1000)); // Show message briefly
-                            }
-
-                            // Extract metadata (Age/Gender) from raw text if possible, using existing logic equivalent
-                            let patientMeta = { Age: 30, Gender: 'M' };
-                            const lowerText = result.raw_text.toLowerCase();
-
-                            // Simple client-side meta extraction from raw text
-                            const ageMatch = lowerText.match(/age\s*[:\-\.]?\s*(\d{1,3})/);
-                            if (ageMatch) patientMeta.Age = parseInt(ageMatch[1]);
-
-                            if (lowerText.includes('female') || lowerText.includes('sex: f')) patientMeta.Gender = 'F';
-
-                            // Call finishAnalysis directly with corrected values
-                            finishAnalysis(result.detected_values, patientMeta);
-                            return; // Done!
-                        }
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.text) {
+                        console.log(`✅ Cloud AI extracted ${result.text.length} chars`);
+                        setStatusText(`✅ Cloud extraction done! Finalizing...`);
+                        await new Promise(r => setTimeout(r, 800));
+                        processTextData(result.text);
+                        return; // Success!
                     }
-                } catch (backendErr) {
-                    console.warn("Backend OCR unavailable, falling back to local Tesseract:", backendErr);
                 }
+            } catch (cloudErr) {
+                console.warn("🔄 Cloud OCR unavailable, falling back to local:", cloudErr);
             }
 
             // OPTION 2: Fallback to Local Tesseract.js (Original Method)
