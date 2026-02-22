@@ -93,6 +93,9 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
     // --- SHARED TEXT PARSING LOGIC (Gen-2: Adaptive & Fuzzy) ---
     const processTextData = (text) => {
         console.log("Processing Extracted Text (Gen-2 Engine)...");
+        console.log("--- RAW EXTRACTED TEXT ---");
+        console.log(text);
+        console.log("--------------------------");
 
         const rows = text.split('\n');
         const extractedValues = {};
@@ -191,17 +194,10 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 });
 
                 if (matchedSynonym) {
-                    // CRITICAL FIX: Ensure the matched keyword appears in THIS row
-                    // This prevents random number extraction for unrelated parameters
-                    // Check against synonyms of the *corrected* key
-                    const keywordInRow = KEYWORD_MAP[currentKey].some(syn => lowerRow.includes(syn.toLowerCase()));
-                    if (!keywordInRow) return; // Skip if keyword not in this row
+                    console.log(`🔍 Potential match found for ${currentKey} via synonym: "${matchedSynonym}" in row: "${lowerRow}"`);
 
-                    // Extract potential numbers from the *entire* row (not just after keyword)
-                    // This handles "14.5 Hemoglobin" AND "Hemoglobin 14.5" layouts
-
-                    // Advanced Number Cleaning:
-                    // 1. Fix spaces around dots: "14 . 5" -> "14.5"
+                    // Clean the row specifically for number extraction
+                    // 1. Fix spaces around dots/commas: "14 . 5" -> "14.5"
                     let cleanNumbersRow = lowerRow
                         .replace(/(\d)\s+[\.,]\s+(\d)/g, '$1.$2') // "14 . 5"
                         .replace(/(\d)\s+[\.,](?=\d)/g, '$1.')    // "14 .5"
