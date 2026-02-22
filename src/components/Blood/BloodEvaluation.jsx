@@ -164,6 +164,47 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
             const lowerRow = row.toLowerCase().trim();
             if (!lowerRow) return;
 
+            // ─── NEW: Tag-Based Parsing (Cloud Priority) ───
+            // If row contains [PARAM] and [VAL], we use explicit parsing (most accurate)
+            if (lowerRow.includes('[param]') && lowerRow.includes('[val]')) {
+                const paramPart = lowerRow.split('[val]')[0].replace('[param]', '').trim();
+                const valPart = lowerRow.split('[val]')[1].split('[unit]')[0].trim();
+                const metaPart = lowerRow.split('[meta]'); // Check for [META] age/gender
+
+                // Extract Numeric Value safely from [VAL] section
+                const valMatch = valPart.match(/(\d+\.?\d*)/);
+                if (valMatch) {
+                    const extractedVal = parseFloat(valMatch[0]);
+
+                    // Find which internal key this paramPart belongs to
+                    Object.keys(KEYWORD_MAP).forEach(paramKey => {
+                        const synonyms = KEYWORD_MAP[paramKey];
+                        if (synonyms.some(s => paramPart.includes(s.toLowerCase()) || isFuzzyMatch(paramPart, s))) {
+                            if (!extractedValues[paramKey]) {
+                                extractedValues[paramKey] = extractedVal;
+                                console.log(`🎯 Explicit Cloud Match: ${paramKey} = ${extractedVal} (from tags)`);
+                            }
+                        }
+                    });
+                }
+
+                // Metadata extraction from [META] tags
+                if (lowerRow.includes('[meta]')) {
+                    const metaSegments = lowerRow.split('[meta]');
+                    metaSegments.forEach(seg => {
+                        if (seg.includes('age')) {
+                            const m = seg.match(/(\d+)/);
+                            if (m) patientMeta.Age = parseInt(m[1]);
+                        }
+                        if (seg.includes('male') || seg.includes('sex: m')) patientMeta.Gender = 'M';
+                        if (seg.includes('female') || seg.includes('sex: f')) patientMeta.Gender = 'F';
+                    });
+                }
+                return; // Skip fuzzy logic for this row as it's already handled by tags
+            }
+
+
+            // ─── ORIGINAL: Fuzzy / Adaptive Parsing (Fallback) ───
             // 3. Safety Filter: Ignore lines that still look like Patient Info
             // (Even if we missed the header, these keys are risky)
             const IGNORE_KEYS = ['patient', 'name:', 'age:', 'sex:', 'gender:', 'id:', 'referred by:', 'dr.', 'date:', 'time:'];

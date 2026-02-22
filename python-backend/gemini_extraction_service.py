@@ -34,18 +34,27 @@ except ImportError:
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 
-# Prompt specifically tuned for blood / pathology lab reports
-EXTRACTION_PROMPT = """You are a medical document OCR expert. Extract ALL text from this blood report lab result page.
+# Prompt specifically tuned for 100% accuracy in blood reports
+EXTRACTION_PROMPT = """You are a medical document OCR expert. 
+Your task is to extract blood test results from this lab report with PERFECT accuracy.
+
+For every test result found, output a line in this EXACT format:
+[PARAM] test name [VAL] numeric result [UNIT] units [RANGE] reference range
+
+Example output lines:
+[PARAM] Hemoglobin [VAL] 13.5 [UNIT] g/dL [RANGE] 13.0 - 17.0
+[PARAM] WBC Count [VAL] 4500 [UNIT] /uL [RANGE] 4000 - 11000
 
 CRITICAL RULES:
-1. Extract EVERY line of text exactly as printed — do not skip anything
-2. For tables, output each row on its own line with values separated by spaces
-3. Preserve all numbers exactly (e.g., 13.2, 4.5, 210000)
-4. Include: test names, observed values, units, reference ranges
-5. Include: patient name, age, sex, date if present
-6. Do NOT add any commentary, interpretation or markdown — just plain extracted text
-
-Output format: plain text exactly as it appears on the document."""
+1. Extract EVERY numeric result you see.
+2. Distinguish clearly between the "Result" and the "Reference Range". 
+3. Only put the actual measured result after [VAL].
+4. Put the normal intervals after [RANGE].
+5. Numbers must be exact. Do not round. 13.2 must be 13.2.
+6. If a piece of data is missing, use "N/A".
+7. Do NOT add any markdown, bolding, or conversational text. Just the tagged lines.
+8. If you see patient info, include it like this: [META] Age: 35 [META] Gender: Male
+"""
 
 
 def _configure_gemini():
