@@ -68,14 +68,17 @@ class HealthChatBot:
         )
 
     def _get_ai_response(self, query, user_profile, blood_reports):
-        """Use Gemini to generate a response"""
+        """Use Gemini to generate a response grounded in our Knowledge Base"""
         try:
             # Build Context
             profile_str = json.dumps(user_profile, indent=2) if user_profile else "Not provided"
             
+            # Grounding: Inject Knowledge Base segments
+            kb_str = json.dumps(self.knowledge_base, indent=2)
+
             reports_summary = ""
             if blood_reports:
-                for r in blood_reports[:2]: # Last 2 reports
+                for r in blood_reports[:3]: # Last 3 reports for trend analysis
                     reports_summary += f"Report Date: {r.get('date')}\nResults: {json.dumps(r.get('results'), indent=2)}\n\n"
             else:
                 reports_summary = "No reports uploaded."
@@ -85,36 +88,43 @@ class HealthChatBot:
                 history_str += f"{msg['sender']}: {msg['text']}\n"
 
             prompt = f"""
-You are an expert AI Health & Fitness Assistant. Your goal is to provide accurate, helpful, and encouraging advice.
+You are the "Expert Health & Fitness Oracle". You have access to a proprietary Medical Knowledge Base (KB) and the user's personal health data.
 
-CONTEXT:
-User Profile: {profile_str}
-Blood Reports: {reports_summary}
-Recent History:
+MEDICAL KNOWLEDGE BASE (GUIDELINES):
+{kb_str}
+
+USER DATA:
+Profile: {profile_str}
+Recent Blood Reports: {reports_summary}
+Recent Conversation History:
 {history_str}
 
 USER QUESTION: {query}
 
-INSTRUCTIONS:
-1. Use the provided blood reports and profile to give PERSONALIZED advice.
-2. If the user asks general health or natural questions (e.g., "how to sleep better", "benefits of eggs"), answer them comprehensively using your medical knowledge.
-3. Be professional but empathetic.
-4. IMPORTANT: Always include a small disclaimer at the end that you are an AI and they should consult a doctor.
-5. Use markdown formatting (bold, bullet points) for readability.
-6. Keep the response concise but informative.
-7. Return your response in a clear text format.
+CRITICAL INSTRUCTIONS:
+1. ANALYSIS: Compare the user's blood report values (if provided) against the "normal_ranges" in the KB. Identify if they are High, Low, or Normal.
+2. PERSONALIZATION: If a user asks about a specific issue (e.g., "my hemoglobin is low"), provide a deep-dive response:
+   - WHAT IT MEANS: Explain the parameter based on the KB.
+   - WHY IT HAPPENS: List "low_causes" or "high_causes" from the KB.
+   - STEP-BY-STEP ACTION PLAN:
+     * Phase 1 (Diet): List specific foods from the KB "low_recommendations" or "high_recommendations".
+     * Phase 2 (Lifestyle): Suggest lifestyle changes or exercises from the KB.
+     * Phase 3 (Supplements/Next Steps): Mention supplements or medical follow-ups from the KB.
+3. FORMATTING: Use Markdown (Bold headers, bullet points, numbered lists) for a premium look.
+4. TONE: Professional, diagnostic, and highly specific. Do NOT give vague advice. Use the exact data from the KB.
+5. DISCLAIMER: Always end with: "⚠️ This is AI-guided analysis based on your reports. Please consult your physician for clinical diagnosis."
 
-Your Response:"""
+Expert Response:"""
 
             response = self.model.generate_content(prompt)
             return {
                 'text': response.text,
-                'confidence': 0.95,
-                'intent': 'generative_ai',
-                'method': 'gemini_pro'
+                'confidence': 0.98,
+                'intent': 'expert_analysis',
+                'method': 'grounded_gemini'
             }
         except Exception as e:
-            print(f"❌ Gemini generation failed: {e}")
+            print(f"❌ Gemini expert generation failed: {e}")
             return None
     
     def _extract_entities(self, query):

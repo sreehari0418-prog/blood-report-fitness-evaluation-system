@@ -200,27 +200,72 @@ const AIChat = ({ onBack, userProfile }) => {
         setInput(action.q);
     };
 
+    const renderMessage = (text) => {
+        // Simple Markdown-to-JSX parser
+        const lines = text.split('\n');
+        return lines.map((line, i) => {
+            let processedLine = line;
+
+            // Bold Headers (### Header)
+            if (processedLine.startsWith('### ')) {
+                return <h4 key={i} style={{ margin: '12px 0 6px 0', color: 'var(--color-primary)' }}>{processedLine.replace('### ', '')}</h4>;
+            }
+
+            // Bold text (**text**)
+            const boldRegex = /\*\*(.*?)\*\*/g;
+            const segments = [];
+            let lastIndex = 0;
+            let match;
+
+            while ((match = boldRegex.exec(processedLine)) !== null) {
+                if (match.index > lastIndex) {
+                    segments.push(processedLine.substring(lastIndex, match.index));
+                }
+                segments.push(<strong key={match.index}>{match[1]}</strong>);
+                lastIndex = boldRegex.lastIndex;
+            }
+            if (lastIndex < processedLine.length) {
+                segments.push(processedLine.substring(lastIndex));
+            }
+
+            // Bullet points (* or -)
+            if (processedLine.trim().startsWith('* ') || processedLine.trim().startsWith('- ')) {
+                return (
+                    <div key={i} style={{ display: 'flex', gap: '8px', paddingLeft: '8px', marginBottom: '4px' }}>
+                        <span>•</span>
+                        <span>{segments.length > 0 ? segments : processedLine.replace(/^[*|-]\s/, '')}</span>
+                    </div>
+                );
+            }
+
+            return (
+                <div key={i} style={{ marginBottom: i < lines.length - 1 ? '6px' : '0' }}>
+                    {segments.length > 0 ? segments : processedLine}
+                </div>
+            );
+        });
+    };
+
     return (
         <div className="chat-container fade-in">
             <div className="header-row">
                 <button onClick={onBack} className="back-btn">
                     <ChevronLeft size={24} />
                 </button>
-                <h2>🤖 AI Health Assistant</h2>
+                <h2>🤖 IA Expert Assistant</h2>
             </div>
 
             <div className="chat-window">
                 {messages.map((msg) => (
                     <div key={msg.id} className={`message-row ${msg.sender}`}>
-                        {msg.sender === 'bot' && <div className="avatar bot"><Bot size={16} /></div>}
+                        {msg.sender === 'bot' && (
+                            <div className="avatar bot">
+                                {msg.intent === 'expert_analysis' ? <Sparkles size={16} /> : <Bot size={16} />}
+                            </div>
+                        )}
                         <div className="message-container">
                             <div className="message-bubble">
-                                {msg.text.split('\n').map((line, i) => (
-                                    <React.Fragment key={i}>
-                                        {line}
-                                        {i < msg.text.split('\n').length - 1 && <br />}
-                                    </React.Fragment>
-                                ))}
+                                {renderMessage(msg.text)}
                             </div>
 
                             {msg.type === 'choice' && (
@@ -242,7 +287,7 @@ const AIChat = ({ onBack, userProfile }) => {
                                 <div className="message-actions">
                                     <span className="confidence-badge">
                                         {msg.confidence >= 0.9 ? '🟢' : msg.confidence >= 0.7 ? '🟡' : '🔴'}
-                                        {Math.round(msg.confidence * 100)}% confident
+                                        {msg.intent === 'expert_analysis' ? 'Expert Analysis' : `${Math.round(msg.confidence * 100)}% confident`}
                                     </span>
                                     <button
                                         onClick={() => copyToClipboard(msg.text, msg.id)}
