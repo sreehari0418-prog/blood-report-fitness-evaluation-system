@@ -1,6 +1,13 @@
+```python
 import os
 import werkzeug
 from datetime import datetime, timedelta
+from flask import Flask, request, jsonify, g
+from flask_cors import CORS
+from flask_sqlalchemy import SQLAlchemy
+from ocr_service import create_ocr_endpoint
+import bcrypt
+import jwt
 
 # Initialize Flask App
 app = Flask(__name__)
@@ -20,6 +27,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', f'sqlite:///{d
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+
+# Initialize OCR Service
+create_ocr_endpoint(app)
 
 # ============================================================================
 # DATABASE MODELS
