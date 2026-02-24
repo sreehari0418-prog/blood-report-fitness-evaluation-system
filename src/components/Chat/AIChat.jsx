@@ -156,7 +156,7 @@ const AIChat = ({ onBack, userProfile }) => {
         } catch (error) {
             console.warn('Chat Error:', error);
             return {
-                text: "I'm having trouble connecting to my AI brain. However, for general health questions, I can still provide instant answers based on my knowledge base!",
+                text: "I couldn't find a specific answer for that in my health knowledge base. Try asking about common parameters like Hemoglobin, Creatinine, or Blood Sugar!",
                 confidence: 0
             };
         }
@@ -301,10 +301,10 @@ const AIChat = ({ onBack, userProfile }) => {
                     <ChevronLeft size={20} />
                 </button>
                 <div className="bot-info">
-                    <h2>🤖 AI Assistant</h2>
+                    <h2>🤖 Health Assistant</h2>
                     <div className="badge-proactive">
                         <div className="pulse"></div>
-                        <span>Grounding Active</span>
+                        <span>Knowledge Base Active</span>
                     </div>
                 </div>
                 <Sparkles size={22} className="ai-glow" />
@@ -345,7 +345,7 @@ const AIChat = ({ onBack, userProfile }) => {
                                 <div className="message-meta">
                                     <div className="expert-badge">
                                         <ShieldCheck size={12} />
-                                        <span>Medical Grounding: 100%</span>
+                                        <span>Expert Grounded Answer</span>
                                     </div>
                                     <button
                                         onClick={() => copyToClipboard(msg.text, msg.id)}

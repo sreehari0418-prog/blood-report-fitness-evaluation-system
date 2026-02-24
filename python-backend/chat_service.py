@@ -7,28 +7,19 @@ import json
 import os
 from datetime import datetime
 import re
-import google.generativeai as genai
+import json
+import os
+from datetime import datetime
+import re
 
-# Hardcoded fallback for Render free tier limits
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyAoVO1hSasH1tjDV-hAk5xVyX86jG6DPoE")
+# Gemini AI is disabled to focus on local knowledge base and rule-based logic
 
 class HealthChatBot:
     def __init__(self, knowledge_base_path='knowledge_base.json'):
-        """Initialize the chatbot with medical knowledge base and Gemini"""
+        """Initialize the chatbot with medical knowledge base"""
         self.knowledge_base = self._load_knowledge_base(knowledge_base_path)
         self.conversation_context = []
-        self._setup_gemini()
-
-    def _setup_gemini(self):
-        """Configure Gemini AI"""
-        try:
-            genai.configure(api_key=GEMINI_API_KEY)
-            self.model = genai.GenerativeModel('gemini-1.5-flash')
-            self.ai_enabled = True
-            print("✅ Gemini AI Chatbot initialized")
-        except Exception as e:
-            print(f"⚠️ Gemini AI initialization failed: {e}")
-            self.ai_enabled = False
+        self.ai_enabled = False # Gemini disabled
         
     def _load_knowledge_base(self, path):
         """Load the medical knowledge base"""
@@ -54,12 +45,6 @@ class HealthChatBot:
         if predefined_res:
             return predefined_res
 
-        # Try AI Response next if enabled
-        if self.ai_enabled:
-            ai_res = self._get_ai_response(query, user_profile, blood_reports)
-            if ai_res:
-                return ai_res
-
         # FALLBACK: Original Rule-Based Logic
         entities = self._extract_entities(query_lower)
         intent = self._determine_intent(query_lower, entities)
@@ -72,92 +57,6 @@ class HealthChatBot:
             blood_reports=blood_reports
         )
 
-    def _get_ai_response(self, query, user_profile, blood_reports):
-        """Use Gemini to generate a response grounded in our Knowledge Base"""
-        try:
-            # Build Context
-            profile_str = json.dumps(user_profile, indent=2) if user_profile else "Not provided"
-            
-            # Grounding: Inject Knowledge Base segments
-            kb_str = json.dumps(self.knowledge_base, indent=2)
-
-            reports_summary = ""
-            if blood_reports:
-                for r in blood_reports[:3]: # Last 3 reports for trend analysis
-                    reports_summary += f"Report Date: {r.get('date')}\nResults: {json.dumps(r.get('results'), indent=2)}\n\n"
-            else:
-                reports_summary = "No reports uploaded."
-
-            history_str = ""
-            for msg in self.conversation_context:
-                history_str += f"{msg['sender']}: {msg['text']}\n"
-
-            prompt = f"""
-You are the "Expert Health & Fitness Oracle" (a mini-Gemini). You have access to a proprietary Medical Knowledge Base (KB) and the user's personal health data.
-
-MEDICAL KNOWLEDGE BASE (GUIDELINES):
-{kb_str}
-
-USER DATA:
-Profile: {profile_str}
-Recent Blood Reports: {reports_summary}
-Recent History:
-{history_str}
-
-USER QUESTION: {query}
-
-MISSION CRITICAL:
-1. DIAGNOSTIC DEPTH: Analyze the user's blood report values against the KB. Be precise.
-2. PROACTIVE TRENDS: If multiple reports exist, mention if parameters are improving or declining.
-3. NUTRITIONAL AUTHORITY: Use the `superfoods_and_fruits` and `diet_plans` sections for all dietary advice.
-4. AGENTIC PERSONALITY: Act like a proactive health coach. Don't just answer; suggest the next 3 steps the user should take.
-5. FORMATTING: Use Markdown. Use TABLES whenever comparing data or providing diet/workout plans.
-
-6. RESPONSE STRUCTURE (MANDATORY JSON):
-Return your response ONLY as a JSON object with this exact structure:
-{{
-  "text": "Your professional, encouraging, and analytical response in markdown...",
-  "followups": ["Follow-up question 1?", "Follow-up question 2?", "Follow-up question 3?"],
-  "visual_type": "standard|table|chart",
-  "mood": "insightful|congratulatory|cautionary"
-}}
-Ensure the 'text' includes the medical disclaimer at the end.
-
-Expert Response (JSON):"""
-
-            response = self.model.generate_content(prompt)
-            res_text = response.text.strip()
-            
-            # Extract JSON from potential markdown tags
-            if "```json" in res_text:
-                res_text = res_text.split("```json")[1].split("```")[0].strip()
-            elif "```" in res_text:
-                res_text = res_text.split("```")[1].split("```")[0].strip()
-            
-            try:
-                data = json.loads(res_text)
-                return {
-                    'text': data.get('text', ''),
-                    'followups': data.get('followups', []),
-                    'visual_type': data.get('visual_type', 'standard'),
-                    'mood': data.get('mood', 'insightful'),
-                    'confidence': 0.99,
-                    'intent': 'expert_analysis',
-                    'method': 'gemini_mini'
-                }
-            except:
-                # Fallback if JSON fails
-                return {
-                    'text': response.text,
-                    'followups': ["Can you explain that more?", "What should I eat for this?", "Is this normal?"],
-                    'visual_type': 'standard',
-                    'confidence': 0.95,
-                    'intent': 'expert_analysis',
-                    'method': 'gemini_mini_fallback'
-                }
-        except Exception as e:
-            print(f"❌ Gemini expert generation failed: {e}")
-            return None
 
     def _handle_predefined_qa(self, query):
         """Match query against expert_health_qa in Knowledge Base"""
