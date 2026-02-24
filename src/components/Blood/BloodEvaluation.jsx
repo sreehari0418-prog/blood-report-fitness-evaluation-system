@@ -324,7 +324,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 values: analysisResult.values,
                 risks: analysisResult.risks || [],
                 mlPredictions: analysisResult.mlPredictions || [],
-                summary: analysisMode === 'expert' ? 'Expert Rule Analysis' : 'ML Model Analysis'
+                summary: analysisMode === 'expert' ? 'ML Analysis' : 'Advanced ML Analysis'
             };
 
             await addDoc(collection(db, 'reports'), reportData);
@@ -710,7 +710,7 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                             className={`mode-btn ${analysisMode === 'expert' ? 'active' : ''}`}
                             onClick={() => setAnalysisMode('expert')}
                         >
-                            🩺 Expert
+                            🧠 ML
                         </button>
                         <button
                             className={`mode-btn ${analysisMode === 'manual' ? 'active' : ''}`}
@@ -718,15 +718,17 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                         >
                             ✍️ Manual
                         </button>
+                        {/* 
                         <button
                             className={`mode-btn ${analysisMode === 'ml' ? 'active' : ''}`}
                             onClick={() => setAnalysisMode('ml')}
                         >
-                            🧠 ML
-                        </button>
+                            🧠 ML (Experimental)
+                        </button> 
+                        */}
                     </div>
                     <p className="mode-desc">
-                        {analysisMode === 'expert' ? "Rule-based expert system. Specific & verified diagnosis." :
+                        {analysisMode === 'expert' ? "AI-powered diagnosis system. Specific & verified health assessment." :
                             analysisMode === 'manual' ? "Enter results manually. Select up to 20 parameters." :
                                 "Experimental AI model. Predicts overall health risk."}
                     </p>

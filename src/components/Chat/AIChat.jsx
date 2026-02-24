@@ -345,7 +345,7 @@ const AIChat = ({ onBack, userProfile }) => {
                                 <div className="message-meta">
                                     <div className="expert-badge">
                                         <ShieldCheck size={12} />
-                                        <span>Expert Grounded Answer</span>
+                                        <span>AI Grounded Answer</span>
                                     </div>
                                     <button
                                         onClick={() => copyToClipboard(msg.text, msg.id)}

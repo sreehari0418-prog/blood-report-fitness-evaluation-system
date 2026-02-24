@@ -1,14 +1,12 @@
 services:
-  # Unified Backend (Authentication + ML Analysis)
+  # Unified Backend (Authentication + ML Analysis + OCR)
   - type: web
     name: blood-report-fitness-evaluation-system
-    env: python
+    env: docker
     region: singapore
-    buildCommand: cd python-backend && pip install -r requirements.txt
-    startCommand: cd python-backend && gunicorn --workers 1 --timeout 120 unified_api:app --bind 0.0.0.0:$PORT
+    dockerContext: ./python-backend
+    dockerFilePath: ./python-backend/Dockerfile
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.10.0
       - key: JWT_SECRET_KEY
         generateValue: true
     autoDeploy: true
