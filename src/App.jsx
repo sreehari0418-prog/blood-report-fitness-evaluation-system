@@ -16,10 +16,12 @@ import { setupNotifications, schedule3MonthReminder, addNotificationListeners } 
 function App() {
     // Check for existing session immediately to avoid flash of login screen
     const savedUser = localStorage.getItem('user_profile');
-    const [currentPage, setCurrentPage] = useState(savedUser ? 'dashboard' : 'login');
+    const savedUserParsed = savedUser ? JSON.parse(savedUser) : null;
+    // Use 'loading' state during initial auth check to avoid flashing wrong page
+    const [currentPage, setCurrentPage] = useState(savedUser ? 'dashboard' : 'loading');
     const [currentData, setCurrentData] = useState(null); // Data passed between pages
     const [user, setUser] = useState(null); // Auth object
-    const [userData, setUserData] = useState(savedUser ? JSON.parse(savedUser) : null);
+    const [userData, setUserData] = useState(savedUserParsed);
 
     // Notification State
     const [toastMsg, setToastMsg] = useState(null);
@@ -49,20 +51,45 @@ function App() {
             if (firebaseUser) {
                 // User is logged in
                 console.log('User logged in:', firebaseUser.email);
-                setUser({ email: firebaseUser.email, id: firebaseUser.uid });
+                const authUser = { email: firebaseUser.email, id: firebaseUser.uid };
+                setUser(authUser);
 
-                // Load profile from Firestore
+                // Check if we already have a valid matching cached profile
+                // to avoid flashing the profile setup page on refresh
+                const cached = localStorage.getItem('user_profile');
+                if (cached) {
+                    try {
+                        const parsed = JSON.parse(cached);
+                        if (parsed.email === firebaseUser.email) {
+                            // Valid cache hit — use it immediately and avoid profile_setup flash
+                            setUserData(parsed);
+                            setCurrentPage('dashboard');
+                            // Silently refresh from Firestore in background
+                            api.getProfile().then(response => {
+                                if (response.success && response.profile) {
+                                    setUserData(response.profile);
+                                    localStorage.setItem('user_profile', JSON.stringify(response.profile));
+                                }
+                            }).catch(() => { /* keep cached data if network fails */ });
+                            return;
+                        }
+                    } catch (_) { /* invalid cache, continue */ }
+                }
+
+                // No valid cache — load profile from Firestore
                 try {
                     const response = await api.getProfile();
                     if (response.success && response.profile) {
                         setUserData(response.profile);
+                        localStorage.setItem('user_profile', JSON.stringify(response.profile));
                         setCurrentPage('dashboard');
                     } else {
-                        // No profile found, go to setup
+                        // Genuinely new user — go to profile setup
                         setCurrentPage('profile_setup');
                     }
                 } catch (error) {
                     console.error('Error loading profile:', error);
+                    // Network error but user is authenticated — go to setup only if no cache
                     setCurrentPage('profile_setup');
                 }
             } else {
@@ -70,6 +97,7 @@ function App() {
                 console.log('User logged out');
                 setUser(null);
                 setUserData(null);
+                localStorage.removeItem('user_profile');
                 setCurrentPage('login');
             }
         });
@@ -162,6 +190,15 @@ function App() {
         <div className="app-container">
             {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
 
+            {currentPage === 'loading' && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', background: 'var(--color-background, #f8fafc)' }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ width: 48, height: 48, border: '4px solid #e2e8f0', borderTop: '4px solid #3b82f6', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Loading...</p>
+                    </div>
+                    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+                </div>
+            )}
             {currentPage === 'login' && <Login onLogin={handleLogin} />}
             {currentPage === 'profile_setup' && <ProfileSetup onComplete={handleProfileComplete} />}
             {currentPage === 'dashboard' && <Dashboard userName={userData?.name} userProfile={userData} onNavigate={handleNavigate} onLogout={handleLogout} />}
