@@ -1,5 +1,18 @@
-import React, { useState } from 'react';
-import { ChevronLeft, TrendingDown, TrendingUp, Minus, Calendar, Activity } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { ChevronLeft, TrendingDown, TrendingUp, Minus, Calendar, Activity, Info } from 'lucide-react';
+import { 
+    LineChart, 
+    Line, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip, 
+    ResponsiveContainer,
+    Area,
+    AreaChart,
+    Defs,
+    LinearGradient
+} from 'recharts';
 
 const WeightProgress = ({ onBack, userProfile }) => {
     const [weightLog, setWeightLog] = useState(() => {
@@ -42,6 +55,26 @@ const WeightProgress = ({ onBack, userProfile }) => {
     const progress = calculateProgress();
     const initialWeight = userProfile?.weight || (weightLog.length > 0 ? weightLog[0].weight : 0);
     const latestWeight = weightLog.length > 0 ? weightLog[weightLog.length - 1].weight : initialWeight;
+
+    const chartData = useMemo(() => {
+        return weightLog.map(entry => ({
+            ...entry,
+            formattedDate: new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+            weight: Number(entry.weight)
+        }));
+    }, [weightLog]);
+
+    const CustomTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="custom-tooltip">
+                    <p className="tooltip-date">{payload[0].payload.displayDate}</p>
+                    <p className="tooltip-weight">{payload[0].value} <span className="unit">kg</span></p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="weight-container fade-in">
@@ -88,6 +121,56 @@ const WeightProgress = ({ onBack, userProfile }) => {
                         Add
                     </button>
                 </div>
+            </div>
+
+            <div className="chart-section">
+                <div className="section-header">
+                    <h3>Weight Trend</h3>
+                    <div className="info-badge">
+                        <Info size={12} />
+                        <span>Interactive</span>
+                    </div>
+                </div>
+                {weightLog.length > 1 ? (
+                    <div className="chart-wrapper">
+                        <ResponsiveContainer width="100%" height={250}>
+                            <AreaChart data={chartData}>
+                                <defs>
+                                    <linearGradient id="colorWeight" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis 
+                                    dataKey="formattedDate" 
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 11 }}
+                                    dy={10}
+                                />
+                                <YAxis 
+                                    hide={true}
+                                    domain={['dataMin - 5', 'dataMax + 5']}
+                                />
+                                <Tooltip content={<CustomTooltip />} />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="weight" 
+                                    stroke="var(--color-primary)" 
+                                    strokeWidth={3}
+                                    fillOpacity={1} 
+                                    fill="url(#colorWeight)" 
+                                    animationDuration={1500}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                ) : (
+                    <div className="empty-chart">
+                        <p>Not enough data to show trend. Add {2 - weightLog.length} more log{2 - weightLog.length > 1 ? 's' : ''}.</p>
+                    </div>
+                )}
             </div>
 
             <div className="history-section">
@@ -234,6 +317,74 @@ const WeightProgress = ({ onBack, userProfile }) => {
                     font-size: 16px;
                     font-weight: bold;
                     color: var(--color-primary);
+                }
+
+                .chart-section {
+                    background: white;
+                    padding: 20px;
+                    border-radius: var(--radius-lg);
+                    box-shadow: var(--shadow-md);
+                    margin-bottom: 25px;
+                }
+                .section-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                }
+                .section-header h3 {
+                    font-size: 14px;
+                    margin: 0;
+                    color: var(--color-text-main);
+                }
+                .info-badge {
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    background: #f1f5f9;
+                    padding: 4px 8px;
+                    border-radius: 100px;
+                    font-size: 10px;
+                    color: var(--color-text-muted);
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                .chart-wrapper {
+                    margin-left: -15px;
+                    margin-right: -10px;
+                }
+                .empty-chart {
+                    height: 150px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    border: 2px dashed #f1f5f9;
+                    border-radius: var(--radius-md);
+                    color: var(--color-text-muted);
+                    font-size: 13px;
+                }
+                .custom-tooltip {
+                    background: white;
+                    padding: 10px 15px;
+                    border-radius: var(--radius-md);
+                    box-shadow: var(--shadow-lg);
+                    border: 1px solid #f1f5f9;
+                }
+                .tooltip-date {
+                    font-size: 11px;
+                    color: var(--color-text-secondary);
+                    margin: 0 0 4px 0;
+                }
+                .tooltip-weight {
+                    font-size: 18px;
+                    font-weight: 800;
+                    color: var(--color-primary);
+                    margin: 0;
+                }
+                .tooltip-weight .unit {
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: var(--color-text-muted);
                 }
             `}</style>
         </div>

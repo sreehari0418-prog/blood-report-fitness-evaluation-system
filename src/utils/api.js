@@ -132,7 +132,49 @@ export const api = {
      * Listen to auth state changes
      * @param {function} callback - Callback function for auth state changes
      */
-    onAuthStateChange(callback) {
+    async onAuthStateChange(callback) {
         return onAuthStateChanged(auth, callback);
+    },
+
+    /**
+     * Password Reset Flow (Custom OTP)
+     */
+    async requestPasswordReset(email) {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            return await response.json();
+        } catch (error) {
+            return { success: false, error: 'Network error. Please try again.' };
+        }
+    },
+
+    async verifyOTP(email, otp) {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/verify-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp })
+            });
+            return await response.json();
+        } catch (error) {
+            return { success: false, error: 'Network error. Please try again.' };
+        }
+    },
+
+    async resetPassword(email, otp, password) {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001'}/api/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, otp, password })
+            });
+            return await response.json();
+        } catch (error) {
+            return { success: false, error: 'Network error. Please try again.' };
+        }
     }
 };

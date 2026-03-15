@@ -1,4 +1,3 @@
-```python
 import os
 import werkzeug
 from datetime import datetime, timedelta
@@ -42,6 +41,18 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     profile = db.relationship('Profile', backref='user', uselist=False)
+
+class PasswordReset(db.Model):
+    __tablename__ = 'password_resets'
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(120), nullable=False)
+    otp = db.Column(db.String(6), nullable=False)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_valid(self):
+        return not self.used and self.expires_at > datetime.utcnow()
 
 class Profile(db.Model):
     __tablename__ = 'profiles'
@@ -175,6 +186,110 @@ def login():
     except Exception as e:
         print(f"Login error: {str(e)}")
         return jsonify({'error': 'Login failed'}), 500
+
+@app.route('/api/auth/forgot-password', methods=['POST'])
+def forgot_password():
+    try:
+        data = request.json
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': 'Email is required'}), 400
+            
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            # For security, don't reveal if user exists, but for this app we'll be helpful
+            return jsonify({'error': 'User with this email not found'}), 404
+            
+        # Generate 6-digit OTP
+        import random
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        
+        # Store OTP (expires in 15 minutes)
+        expires_at = datetime.utcnow() + timedelta(minutes=15)
+        reset_entry = PasswordReset(email=email, otp=otp, expires_at=expires_at)
+        db.session.add(reset_entry)
+        db.session.commit()
+        
+        # --- MOCK EMAIL SENDING ---
+        print("\n" + "="*50)
+        print(f"📧 EMAIL SENT TO: {email}")
+        print(f"🔑 YOUR RESET CODE: {otp}")
+        print(f"⏰ EXPIRES AT: {expires_at}")
+        print("="*50 + "\n")
+        # --------------------------
+        
+        return jsonify({
+            'success': True, 
+            'message': 'OTP sent to email (check backend console)'
+        }), 200
+        
+    except Exception as e:
+        print(f"Forgot password error: {str(e)}")
+        return jsonify({'error': 'Failed to process request'}), 500
+
+@app.route('/api/auth/verify-otp', methods=['POST'])
+def verify_otp():
+    try:
+        data = request.json
+        email = data.get('email')
+        otp = data.get('otp')
+        
+        if not email or not otp:
+            return jsonify({'error': 'Email and OTP are required'}), 400
+            
+        reset_entry = PasswordReset.query.filter_by(email=email, otp=otp).order_by(PasswordReset.created_at.desc()).first()
+        
+        if not reset_entry or not reset_entry.is_valid():
+            return jsonify({'error': 'Invalid or expired OTP'}), 400
+            
+        return jsonify({
+            'success': True,
+            'message': 'OTP verified successfully'
+        }), 200
+        
+    except Exception as e:
+        print(f"OTP verification error: {str(e)}")
+        return jsonify({'error': 'Verification failed'}), 500
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    try:
+        data = request.json
+        email = data.get('email')
+        otp = data.get('otp')
+        new_password = data.get('password')
+        
+        if not email or not otp or not new_password:
+            return jsonify({'error': 'All fields are required'}), 400
+            
+        reset_entry = PasswordReset.query.filter_by(email=email, otp=otp).order_by(PasswordReset.created_at.desc()).first()
+        
+        if not reset_entry or not reset_entry.is_valid():
+            return jsonify({'error': 'Invalid or expired session'}), 400
+            
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+            
+        # Hash new password
+        hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user.password_hash = hashed_pw
+        
+        # Mark OTP as used
+        reset_entry.used = True
+        
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Password reset successfully'
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Reset password error: {str(e)}")
+        return jsonify({'error': 'Failed to reset password'}), 500
 
 @app.route('/api/profile', methods=['GET'])
 def get_profile():
