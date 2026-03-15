@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Info, Activity, RefreshCw } from 'lucide-react';
+import { ChevronLeft, Info, Activity, RefreshCw, Dumbbell, Utensils } from 'lucide-react';
 
 const BMICalculator = ({ userProfile, onBack }) => {
     // State for Advanced Inputs
@@ -16,6 +16,8 @@ const BMICalculator = ({ userProfile, onBack }) => {
     const [category, setCategory] = useState('');
     const [idealWeight, setIdealWeight] = useState('');
     const [healthStatus, setHealthStatus] = useState('');
+    const [fitnessTip, setFitnessTip] = useState('');
+    const [dietTip, setDietTip] = useState('');
 
     // Auto-fill from profile on load
     useEffect(() => {
@@ -55,25 +57,38 @@ const BMICalculator = ({ userProfile, onBack }) => {
         let color = '';
         let status = '';
 
+        let fitTip = '';
+        let dieTip = '';
+
         if (bmiValue < 18.5) {
             cat = 'Underweight';
             color = 'var(--color-accent)';
             status = 'You may need to increase your calorie intake. Focus on nutrient-dense foods.';
+            fitTip = 'Focus on resistance training to build muscle mass rather than intensive cardio.';
+            dieTip = 'Eat frequent, smaller meals and include healthy fats, proteins, and complex carbohydrates.';
         } else if (bmiValue < 24.9) {
             cat = 'Normal Weight';
             color = 'var(--color-success)';
             status = 'Great job! You have a healthy body weight. Maintain it with balanced diet and exercise.';
+            fitTip = 'Maintain a mix of 150 minutes of moderate aerobic activity and muscle-strengthening exercises weekly.';
+            dieTip = 'Focus on a balanced diet rich in fruits, vegetables, lean proteins, and whole grains.';
         } else if (bmiValue < 29.9) {
             cat = 'Overweight';
             color = 'var(--color-warning)';
             status = 'Try to incorporate more cardio and monitor portion sizes to reach a healthier range.';
+            fitTip = 'Increase daily physical activity. Aim for at least 30-45 minutes of brisk walking or swimming.';
+            dieTip = 'Practice portion control and reduce intake of sugary drinks and processed snacks.';
         } else {
             cat = 'Obese';
             color = 'var(--color-danger)';
             status = 'It is recommended to consult a healthcare provider for a personalized weight management plan.';
+            fitTip = 'Start with low-impact exercises like walking or water aerobics to protect your joints.';
+            dieTip = 'Consult with a nutritionist to create a sustainable calorie-deficit plan focused on whole foods.';
         }
         setCategory({ label: cat, color });
         setHealthStatus(status);
+        setFitnessTip(fitTip);
+        setDietTip(dieTip);
 
         // Ideal Body Weight (Robinson Formula)
         // Men: 52 kg + 1.9 kg per inch over 5 feet
@@ -211,6 +226,20 @@ const BMICalculator = ({ userProfile, onBack }) => {
                                 <div>
                                     <h4>Health Tip</h4>
                                     <p>{healthStatus}</p>
+                                </div>
+                            </div>
+                            <div className="insight-item">
+                                <Dumbbell size={20} className="icon" />
+                                <div>
+                                    <h4>Fitness Tip</h4>
+                                    <p>{fitnessTip}</p>
+                                </div>
+                            </div>
+                            <div className="insight-item">
+                                <Utensils size={20} className="icon" />
+                                <div>
+                                    <h4>Diet Tip</h4>
+                                    <p>{dietTip}</p>
                                 </div>
                             </div>
                         </div>
