@@ -4,6 +4,8 @@ import Tesseract from 'tesseract.js';
 import { MEDICAL_RANGES, generateDiseasePredictions, analyzeBloodReport, KEYWORD_MAP } from '../../utils/bloodAnalysis';
 import { predictDiseases } from '../../utils/mlService';
 import PredictionResult from '../PredictionResult';
+import { generateReportPDF } from '../../utils/pdfGenerator';
+import { Save } from 'lucide-react';
 
 import * as pdfjsLib from 'pdfjs-dist';
 // Explicitly load worker for Vite
@@ -904,7 +906,17 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
                 <div className="results-section fade-in">
                     <div className="results-header">
                         <h3>Report Analysis</h3>
-                        <button className="text-btn" onClick={() => setAnalyzedData(null)}>Close</button>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button 
+                                className="download-btn-mini" 
+                                onClick={() => generateReportPDF(user || { name: 'User' }, [analyzedData])}
+                                title="Download PDF Report"
+                            >
+                                <Save size={16} />
+                                Download 
+                            </button>
+                            <button className="text-btn" onClick={() => setAnalyzedData(null)}>Close</button>
+                        </div>
                     </div>
 
                     {/* NEW AI PREDICTION SECTION (ONNX) */}
@@ -1075,6 +1087,28 @@ const BloodEvaluation = ({ onBack, user, initialViewReport }) => {
            display: flex; justify-content: space-between; align-items: center;
            margin-bottom: 20px;
         }
+        .download-btn-mini {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #f0f7ff;
+            color: #0284c7;
+            border: 1px solid #bae6fd;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .download-btn-mini:hover {
+            background: #e0f2fe;
+            border-color: #7dd3fc;
+        }
+        .download-btn-mini:active {
+            transform: scale(0.95);
+        }
+
         .params-list { display: grid; gap: 10px; }
         .param-card {
            background: white; padding: 15px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
