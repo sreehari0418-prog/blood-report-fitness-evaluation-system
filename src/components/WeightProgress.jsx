@@ -9,9 +9,7 @@ import {
     Tooltip, 
     ResponsiveContainer,
     Area,
-    AreaChart,
-    Defs,
-    LinearGradient
+    AreaChart
 } from 'recharts';
 
 const WeightProgress = ({ onBack, userProfile }) => {
